@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		760E47E2181DD3D800129B05 /* sphere42NS.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 760E47E1181DBA6100129B05 /* sphere42NS.obj */; };
+		760E47E3181DD3D800129B05 /* bunnyNS.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 760E47E0181DBA5C00129B05 /* bunnyNS.obj */; };
+		760E47E4181DD3D800129B05 /* faceNS.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 760E47DF181DBA5800129B05 /* faceNS.obj */; };
+		760E47E5181DD3D800129B05 /* teapotNS.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 760E47DE181DBA5300129B05 /* teapotNS.obj */; };
+		760E47E6181DD3D800129B05 /* fshader.glsl in CopyFiles */ = {isa = PBXBuildFile; fileRef = 76439059181CBBEC0071A5A6 /* fshader.glsl */; };
+		760E47E7181DD3D800129B05 /* vshader.glsl in CopyFiles */ = {isa = PBXBuildFile; fileRef = 7643905A181CBBEC0071A5A6 /* vshader.glsl */; };
+		760E47E8181DD3D800129B05 /* test.scn in CopyFiles */ = {isa = PBXBuildFile; fileRef = 7643905B181CBBEC0071A5A6 /* test.scn */; };
 		7643905C181CBBEC0071A5A6 /* initShader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 76439056181CBBEC0071A5A6 /* initShader.cpp */; };
 		7643905D181CBBEC0071A5A6 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 76439057181CBBEC0071A5A6 /* main.cpp */; };
 		7643905E181CBBEC0071A5A6 /* makefile in Sources */ = {isa = PBXBuildFile; fileRef = 76439058181CBBEC0071A5A6 /* makefile */; };
@@ -18,9 +25,16 @@
 		76439048181CBBA00071A5A6 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 12;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
+			dstPath = "";
+			dstSubfolderSpec = 16;
 			files = (
+				760E47E2181DD3D800129B05 /* sphere42NS.obj in CopyFiles */,
+				760E47E3181DD3D800129B05 /* bunnyNS.obj in CopyFiles */,
+				760E47E4181DD3D800129B05 /* faceNS.obj in CopyFiles */,
+				760E47E5181DD3D800129B05 /* teapotNS.obj in CopyFiles */,
+				760E47E6181DD3D800129B05 /* fshader.glsl in CopyFiles */,
+				760E47E7181DD3D800129B05 /* vshader.glsl in CopyFiles */,
+				760E47E8181DD3D800129B05 /* test.scn in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

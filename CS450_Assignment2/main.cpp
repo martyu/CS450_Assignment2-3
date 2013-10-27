@@ -8,11 +8,14 @@
 #include "Angel.h"
 #include <stdio.h>
 #include <vector>
+#include <string>
+#include <fstream>
 
 #ifdef __APPLE__
 #  include <OpenGL/gl3.h>
 #endif
 
+using namespace std;
 
 class Splitter {
 	std::vector<std::string> _tokens;
@@ -54,75 +57,31 @@ public:
 };
 
 typedef Angel::vec4  color4;
-typedef Angel::vec4  point4;
+typedef Angel::vec3  point3;
 const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 
 GLuint  model_view;  // model-view matrix uniform shader variable location
 GLuint  projection; // projection matrix uniform shader variable location
 
+vector<point3> vertices;
+vector<point3> points;
+vector<vec3>   normals;
 
-point4 points[NumVertices];
-vec4   normals[NumVertices];
+#pragma mark Function declarations
+vector<string> readSceneFile(string fileName);
+void loadObjectFromFile(string objFileName);
 
-// Vertices of a unit cube centered at origin, sides aligned with axes
-point4 vertices[8] =
-{
-    point4( -0.5, -0.5,  0.5, 1.0 ),
-    point4( -0.5,  0.5,  0.5, 1.0 ),
-    point4(  0.5,  0.5,  0.5, 1.0 ),
-    point4(  0.5, -0.5,  0.5, 1.0 ),
-    point4( -0.5, -0.5, -0.5, 1.0 ),
-    point4( -0.5,  0.5, -0.5, 1.0 ),
-    point4(  0.5,  0.5, -0.5, 1.0 ),
-    point4(  0.5, -0.5, -0.5, 1.0 )
-};
+#pragma mark -
 
 
 //----------------------------------------------------------------------------
 
 // quad generates two triangles for each face and assigns colors
 //    to the vertices.  Notice we keep the relative ordering when constructing the tris
-int Index = 0;
-void quad( int a, int b, int c, int d )
+void addTri( int pointA, int pointB, int pointC, int normalA, int normalB, int normalC )
 {
-
-
-	vec4 u = vertices[b] - vertices[a];
-	vec4 v = vertices[c] - vertices[b];
-
-	vec4 normal = normalize( cross(u, v) );
-	normal[3] = 0.0;
-
-	normals[Index] = normal;
-	points[Index++] = vertices[a];
-
-	normals[Index] = normal;
-	points[Index++] = vertices[b];
-
-	normals[Index] = normal;
-	points[Index++] = vertices[c];
-
-	normals[Index] = normal;
-	points[Index++] = vertices[a];
-
-	normals[Index] = normal;
-	points[Index++] = vertices[c];
-
-	normals[Index] = normal;
-	points[Index++] = vertices[d];
-}
-
-//----------------------------------------------------------------------------
-
-// generate 12 triangles: 36 vertices and 36 colors
-void colorcube()
-{
-  quad( 4, 5, 6, 7 );
-  quad( 5, 4, 0, 1 );
-  quad( 1, 0, 3, 2 );
-  quad( 2, 3, 7, 6 );
-  quad( 3, 0, 4, 7 );
-  quad( 6, 5, 1, 2 );
+	points.push_back(point3(pointA, pointB, pointC));
+	normals.push_back(vec3(normalA, normalB, normalC));
 }
 
 //----------------------------------------------------------------------------
@@ -130,8 +89,6 @@ void colorcube()
 // OpenGL initialization
 void init()
 {
-    colorcube();
-
     // Create a vertex array object
     GLuint vao;
     glGenVertexArrays( 1, &vao );
@@ -142,8 +99,8 @@ void init()
     glGenBuffers( 1, &buffer );
     glBindBuffer( GL_ARRAY_BUFFER, buffer );
     glBufferData( GL_ARRAY_BUFFER, sizeof(points) + sizeof(normals), NULL, GL_STATIC_DRAW );
-    glBufferSubData( GL_ARRAY_BUFFER, 0, sizeof(points), points );
-    glBufferSubData( GL_ARRAY_BUFFER, sizeof(points), sizeof(normals), normals );
+    glBufferSubData( GL_ARRAY_BUFFER, 0, points.size()*sizeof(point3), &points[0] );
+    glBufferSubData( GL_ARRAY_BUFFER, points.size()*sizeof(point3), sizeof(normals), &normals[0] );
 
     // Load shaders and use the resulting shader program
     GLuint program = InitShader( "vshader.glsl", "fshader.glsl" );
@@ -162,7 +119,7 @@ void init()
     // Initialize shader lighting parameters
     // RAM: No need to change these...we'll learn about the details when we
     // cover Illumination and Shading
-    point4 light_position( 1.5, 0.5, 2.0, 1.0 );
+    vec4 light_position( 1.5, 0.5, 2.0, 1.0 );
     color4 light_ambient( 0.2, 0.2, 0.2, 1.0 );
     color4 light_diffuse( 1.0, 1.0, 1.0, 1.0 );
     color4 light_specular( 1.0, 1.0, 1.0, 1.0 );
@@ -189,9 +146,9 @@ void init()
 
 
     mat4 p = Perspective(45, 1.0, 0.1, 10.0);
-    point4  eye( 1.0, 1.0, 2.0, 1.0);
-    point4  at( 0.0, 0.0, 0.0, 1.0 );
-    vec4    up( 0.0, 1.0, 0.0, 0.0 );
+    vec4  eye( 1.0, 1.0, 2.0, 1.0);
+    vec4  at( 0.0, 0.0, 0.0, 1.0 );
+    vec4  up( 0.0, 1.0, 0.0, 0.0 );
 
 
     mat4  mv = LookAt( eye, at, up );
@@ -231,7 +188,20 @@ void keyboard( unsigned char key, int x, int y )
 
 int main(int argc, char** argv)
 {
+	string sceneFileName;
+	vector<string> objectFileNames;
 
+	if (argc > 1)
+		sceneFileName = argv[1];
+	else
+		sceneFileName = "test.scn";
+
+	objectFileNames = readSceneFile(sceneFileName);
+
+	for (int i = 0; i < objectFileNames.size(); i++)
+	{
+		loadObjectFromFile(objectFileNames[i]);
+	}
 
     glutInit(&argc, argv);
 #ifdef __APPLE__
@@ -260,3 +230,102 @@ int main(int argc, char** argv)
 
     return(0);
 }
+
+vector<string> readSceneFile(string fileName)
+{
+	vector<string> objectFileNames;
+	ifstream fileStream(fileName);
+	string line;
+
+	fileStream.clear();
+	if (fileStream.is_open())
+	{
+		getline(fileStream, line);
+		Splitter split(line, " ");
+
+		// get names of object files
+		while (fileStream.good())
+		{
+			getline(fileStream, line);
+			split.reset(line, " ");
+			objectFileNames.push_back(split[0]);
+		}
+	}
+	else
+	{
+		cout << "\nCouldn't read file\n";
+		exit(1);
+	}
+
+	return objectFileNames;
+}
+
+void loadObjectFromFile(string objFileName)
+{
+	ifstream fileStream(objFileName);
+	string line;
+
+	fileStream.clear();
+	if (fileStream.is_open())
+	{
+		getline(fileStream, line);
+		Splitter split(line, " ");
+
+		// ignore comment lines
+		while (split[0].c_str()[0] == '#')
+		{
+			getline(fileStream, line);
+			split.reset(line, " ");
+		}
+
+		while (fileStream.good())
+		{
+			// get vertex info
+			while (split[0].compare("v") == 0)
+			{
+				vertices.push_back(point3(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str())));
+				getline(fileStream, line);
+				split.reset(line, " ");
+			}
+
+			// get normals
+			while (split[0].compare("vn") == 0)
+			{
+				normals.push_back(point3(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str())));
+				getline(fileStream, line);
+				split.reset(line, " ");
+			}
+
+			while (split[0].compare("f") == 0)
+			{
+				// extract index values for faces
+				vec3 vertexIndices;
+				vec3 normalIndices;
+
+				Splitter slashSplitter(split[1], "//");
+				vertexIndices.x = atof(slashSplitter[0].c_str());
+				normalIndices.x = atof(slashSplitter[1].c_str());
+
+				slashSplitter.reset(split[2], "//");
+				vertexIndices.y = atof(slashSplitter[0].c_str());
+				normalIndices.y = atof(slashSplitter[1].c_str());
+
+				slashSplitter.reset(split[3], "//");
+				vertexIndices.z = atof(slashSplitter[0].c_str());
+				normalIndices.z = atof(slashSplitter[1].c_str());
+
+				addTri(vertexIndices.x, vertexIndices.y, vertexIndices.z, normalIndices.x, normalIndices.y, normalIndices.z);
+
+				getline(fileStream, line);
+				split.reset(line, " ");
+			}
+		}
+	}
+	else
+	{
+		cout << "\nCouldn't read file\n";
+		exit(1);
+	}
+
+}
+
