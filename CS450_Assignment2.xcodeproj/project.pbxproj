@@ -45,6 +45,9 @@
 		760E47DF181DBA5800129B05 /* faceNS.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = faceNS.obj; sourceTree = "<group>"; };
 		760E47E0181DBA5C00129B05 /* bunnyNS.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = bunnyNS.obj; sourceTree = "<group>"; };
 		760E47E1181DBA6100129B05 /* sphere42NS.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = sphere42NS.obj; sourceTree = "<group>"; };
+		762A2E41181DE13A00BA219C /* teapotFace.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = teapotFace.png; sourceTree = "<group>"; };
+		762A2E42181DE13E00BA219C /* BunnyNS.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = BunnyNS.png; sourceTree = "<group>"; };
+		762A2E43181DE14200BA219C /* Sphere42NS.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Sphere42NS.png; sourceTree = "<group>"; };
 		7643904A181CBBA00071A5A6 /* CS450_Assignment2 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CS450_Assignment2; sourceTree = BUILT_PRODUCTS_DIR; };
 		7643904F181CBBA00071A5A6 /* CS450_Assignment2.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = CS450_Assignment2.1; sourceTree = "<group>"; };
 		76439056181CBBEC0071A5A6 /* initShader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = initShader.cpp; sourceTree = "<group>"; };
@@ -122,6 +125,9 @@
 				76439059181CBBEC0071A5A6 /* fshader.glsl */,
 				7643905A181CBBEC0071A5A6 /* vshader.glsl */,
 				7643905B181CBBEC0071A5A6 /* test.scn */,
+				762A2E41181DE13A00BA219C /* teapotFace.png */,
+				762A2E42181DE13E00BA219C /* BunnyNS.png */,
+				762A2E43181DE14200BA219C /* Sphere42NS.png */,
 				7643904F181CBBA00071A5A6 /* CS450_Assignment2.1 */,
 			);
 			path = CS450_Assignment2;
