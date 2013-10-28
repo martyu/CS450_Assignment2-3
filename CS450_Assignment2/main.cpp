@@ -57,15 +57,15 @@ public:
 };
 
 typedef Angel::vec4  color4;
-typedef Angel::vec3  point3;
+typedef Angel::vec4  point4;
 
 GLuint  model_view;  // model-view matrix uniform shader variable location
 GLuint  projection; // projection matrix uniform shader variable location
 
-vector<point3>	vertexStore;
-vector<vec3>	normalStore;
-vector<point3>	vertices;
-vector<vec3>	normals;
+vector<point4>	vertexStore;
+vector<vec4>	normalStore;
+vector<point4>	vertices;
+vector<vec4>	normals;
 
 #pragma mark Function declarations
 vector<string> readSceneFile(string fileName);
@@ -80,13 +80,13 @@ void loadObjectFromFile(string objFileName);
 //    to the vertices.  Notice we keep the relative ordering when constructing the tris
 void addTri( int pointA, int pointB, int pointC, int normalA, int normalB, int normalC )
 {
-	vertices.push_back(vertexStore[pointA]);
-	vertices.push_back(vertexStore[pointB]);
-	vertices.push_back(vertexStore[pointC]);
+	vertices.push_back(vertexStore[pointA-1]);
+	vertices.push_back(vertexStore[pointB-1]);
+	vertices.push_back(vertexStore[pointC-1]);
 
-	normals.push_back(normalStore[normalA]);
-	normals.push_back(normalStore[normalB]);
-	normals.push_back(normalStore[normalC]);
+	normals.push_back(normalStore[normalA-1]);
+	normals.push_back(normalStore[normalB-1]);
+	normals.push_back(normalStore[normalC-1]);
 }
 
 //----------------------------------------------------------------------------
@@ -103,9 +103,9 @@ void init()
     GLuint buffer;
     glGenBuffers( 1, &buffer );
     glBindBuffer( GL_ARRAY_BUFFER, buffer );
-    glBufferData( GL_ARRAY_BUFFER, (vertices.size() + normals.size()) * sizeof(vec3), NULL, GL_STATIC_DRAW );
-    glBufferSubData( GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(point3), &vertices[0] );
-    glBufferSubData( GL_ARRAY_BUFFER, vertices.size() * sizeof(point3), normals.size() * sizeof(vec3), &normals[0] );
+    glBufferData( GL_ARRAY_BUFFER, (vertices.size() + normals.size()) * sizeof(vec4), NULL, GL_STATIC_DRAW );
+    glBufferSubData( GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(point4), &vertices[0] );
+    glBufferSubData( GL_ARRAY_BUFFER, vertices.size() * sizeof(point4), normals.size() * sizeof(vec4), &normals[0] );
 
     // Load shaders and use the resulting shader program
     GLuint program = InitShader( "vshader.glsl", "fshader.glsl" );
@@ -114,11 +114,11 @@ void init()
     // set up vertex arrays
     GLuint vPosition = glGetAttribLocation( program, "vPosition" );
     glEnableVertexAttribArray( vPosition );
-    glVertexAttribPointer( vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0) );
+    glVertexAttribPointer( vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0) );
 
     GLuint vNormal = glGetAttribLocation( program, "vNormal" );
     glEnableVertexAttribArray( vNormal );
-    glVertexAttribPointer( vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(vertices) * vertices.size()) );
+    glVertexAttribPointer( vNormal, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(vertices.size() * sizeof(point4)) );
 
 
     // Initialize shader lighting parameters
@@ -151,13 +151,12 @@ void init()
 
 
     mat4 p = Perspective(90.0, 1.0, 0.1, 0.5);
-    vec4 eye( 0.0, 0.0, 0.3, 1.0);
-    vec4 at( 0.0, 0.1, 0.0, 1.0 );
+    vec4 eye(0.0, 0.0, 0.3, 1.0);
+    vec4 at(0.0, 0.1, 0.0, 1.0 );
     vec4 up( 0.0, 1.0, 0.0, 0.0 );
 
-
-    mat4  mv = LookAt( eye, at, up );
-    //vec4 v = vec4(0.0, 0.0, 1.0, 1.0);
+	mat4 mv = LookAt( eye, at, up );
+//	mat4 mv = Ortho(-5, 5, -5, 5, 4, 15);
 
     glUniformMatrix4fv( model_view, 1, GL_TRUE, mv );
     glUniformMatrix4fv( projection, 1, GL_TRUE, p );
@@ -171,8 +170,8 @@ void init()
 
 void display( void )
 {
-	int size = (int)vertices.size();
-	printf("size %i\n", size);
+	int size = vertices.size();
+	printf("size = %i\n", size);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     glDrawArrays( GL_TRIANGLES, 0, size);
     glutSwapBuffers();
@@ -290,7 +289,7 @@ void loadObjectFromFile(string objFileName)
 			// get vertex info
 			while (split[0].compare("v") == 0)
 			{
-				vertexStore.push_back(point3(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str())));
+				vertexStore.push_back(point4(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str()), 1.0));
 				getline(fileStream, line);
 				split.reset(line, " ");
 			}
@@ -298,7 +297,7 @@ void loadObjectFromFile(string objFileName)
 			// get normals
 			while (split[0].compare("vn") == 0)
 			{
-				normalStore.push_back(point3(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str())));
+				normalStore.push_back(vec4(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str()), 1.0));
 				getline(fileStream, line);
 				split.reset(line, " ");
 			}
@@ -306,8 +305,8 @@ void loadObjectFromFile(string objFileName)
 			while (split[0].compare("f") == 0)
 			{
 				// extract index values for faces
-				vec3 vertexIndices;
-				vec3 normalIndices;
+				point4 vertexIndices;
+				vec4 normalIndices;
 
 				Splitter slashSplitter(split[1], "//");
 				vertexIndices.x = atof(slashSplitter[0].c_str());
