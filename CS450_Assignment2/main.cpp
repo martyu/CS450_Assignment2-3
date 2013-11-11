@@ -62,31 +62,34 @@ typedef Angel::vec4  point4;
 GLuint  model_view;  // model-view matrix uniform shader variable location
 GLuint  projection; // projection matrix uniform shader variable location
 
-vector<point4>	vertexStore;
-vector<vec4>	normalStore;
+vector<vector<point4>>	vertexStore;
+vector<vector<vec4>>	normalStore;
 vector<point4>	vertices;
 vector<vec4>	normals;
+
+vec4 eye;
+vec4 at;
+vec4 up;
 
 #pragma mark Function declarations
 vector<string> readSceneFile(string fileName);
 void loadObjectFromFile(string objFileName);
+void normalizeVector(vec4 *vector, vec4 min, vec4 max);
 
 #pragma mark -
 
 
 //----------------------------------------------------------------------------
 
-// quad generates two triangles for each face and assigns colors
-//    to the vertices.  Notice we keep the relative ordering when constructing the tris
-void addTri( int pointA, int pointB, int pointC, int normalA, int normalB, int normalC )
+void addTri( int pointA, int pointB, int pointC, int normalA, int normalB, int normalC, int index )
 {
-	vertices.push_back(vertexStore[pointA-1]);
-	vertices.push_back(vertexStore[pointB-1]);
-	vertices.push_back(vertexStore[pointC-1]);
+	vertices.push_back(vertexStore[index][pointA-1]);
+	vertices.push_back(vertexStore[index][pointB-1]);
+	vertices.push_back(vertexStore[index][pointC-1]);
 
-	normals.push_back(normalStore[normalA-1]);
-	normals.push_back(normalStore[normalB-1]);
-	normals.push_back(normalStore[normalC-1]);
+	normals.push_back(normalStore[index][normalA-1]);
+	normals.push_back(normalStore[index][normalB-1]);
+	normals.push_back(normalStore[index][normalC-1]);
 }
 
 //----------------------------------------------------------------------------
@@ -149,14 +152,14 @@ void init()
     projection = glGetUniformLocation( program, "Projection" );
 
 
-
-    mat4 p = Perspective(90.0, 1.0, 0.1, 0.5);
-    vec4 eye(0.0, 0.0, 0.3, 1.0);
-    vec4 at(0.0, 0.1, 0.0, 1.0 );
-    vec4 up( 0.0, 1.0, 0.0, 0.0 );
+//    mat4 p = Perspective(90.0, 1.0, 0.1, 4.0);
+//	eye = vec4(0.0, 0.0, 2.0, 1.0);
+//    at = vec4(0.0, 0.0, 0.0, 1.0 );
+//    up = vec4( 0.0, 1.0, 0.0, 0.0 );
 
 	mat4 mv = LookAt( eye, at, up );
-//	mat4 mv = Ortho(-5, 5, -5, 5, 4, 15);
+//	mat4 p = Ortho(-(int)vertexStore.size(), (int)vertexStore.size(), -(int)vertexStore.size(), (int)vertexStore.size(), 5, -5);
+	mat4 p = Perspective (90.0, 1.0, 0.1, 4.0);
 
     glUniformMatrix4fv( model_view, 1, GL_TRUE, mv );
     glUniformMatrix4fv( projection, 1, GL_TRUE, p );
@@ -164,16 +167,41 @@ void init()
 
     glEnable( GL_DEPTH_TEST );
     glClearColor( 1.0, 1.0, 1.0, 1.0 );
+
+//	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+//	glPolygonOffset(1.0, 2 ); //Try 1.0 and 2 for factor and units
 }
 
 //----------------------------------------------------------------------------
 
 void display( void )
 {
-	int size = vertices.size();
-	printf("size = %i\n", size);
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    glDrawArrays( GL_TRIANGLES, 0, size);
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+	mat4 transform = LookAt(eye, at, up);
+
+	vec4 min = vec4(MAXFLOAT, MAXFLOAT, MAXFLOAT, MAXFLOAT);
+	vec4 max = vec4(-MAXFLOAT, -MAXFLOAT, -MAXFLOAT, -MAXFLOAT);
+
+	vector<point4> transformedVertices;
+	for (int i = 0; i < vertices.size(); i++)
+	{
+		vec4 vertex = transform * vertices[i];
+
+		transformedVertices.push_back(vertex);
+	}
+
+	for (int i = 0; i < transformedVertices.size(); i++)
+	{
+		normalizeVector(&transformedVertices[i], vec4(0, 0, 0, 0), vec4(1.0, 1.0, 1.0, 1.0));
+		vec4 vertex = transformedVertices[i];
+	}
+
+	mat4 p = Perspective (90.0, 1.0, 0.1, 40.0);
+    glUniformMatrix4fv( projection, 1, GL_TRUE, p );
+	glBufferSubData( GL_ARRAY_BUFFER, 0, transformedVertices.size() * sizeof(point4), &transformedVertices[0] );
+	glDrawArrays(GL_TRIANGLES, 0, (int)transformedVertices.size());
+
     glutSwapBuffers();
 }
 
@@ -182,11 +210,51 @@ void display( void )
 void keyboard( unsigned char key, int x, int y )
 {
     switch( key ) {
-	case 033:  // Escape key
+	case 'a':
+		{
+			eye.z -= .1;
+			glutPostRedisplay();
+			break;
+		}
+	case 's':
+		{
+			eye.z += .1;
+			glutPostRedisplay();
+			break;
+		}
+	case 'c':
+		{
+//			printf("eye.x:\n");
+//			scanf("%f", &eye.x);
+//			printf("eye.y:\n");
+//			scanf("%f", &eye.y);
+			printf("eye.z:\n");
+			scanf("%f", &eye.z);
+
+//			printf("at.x:\n");
+//			scanf("%f", &at.x);
+//			printf("at.y:\n");
+//			scanf("%f", &at.y);
+//			printf("at.z:\n");
+//			scanf("%f", &at.z);
+//
+//			printf("up.x:\n");
+//			scanf("%f", &up.x);
+//			printf("up.y:\n");
+//			scanf("%f", &up.y);
+//			printf("up.z:\n");
+//			scanf("%f", &up.z);
+
+			glutPostRedisplay();
+
+			break;
+		}
 	case 'q': case 'Q':
 	    exit( EXIT_SUCCESS );
 	    break;
     }
+
+	printf("eye.z= %f\n", eye.z);
 }
 
 //----------------------------------------------------------------------------
@@ -197,10 +265,22 @@ int main(int argc, char** argv)
 	string sceneFileName;
 	vector<string> objectFileNames;
 
-	if (argc > 1)
+	if (argc > 10)
+	{
 		sceneFileName = argv[1];
+		eye = vec4(atof(argv[2]), atof(argv[3]), atof(argv[4]), 1.0);
+		at = vec4(atof(argv[5]), atof(argv[6]), atof(argv[7]), 1.0);
+		up = vec4(atof(argv[8]), atof(argv[9]), atof(argv[10]), 1.0);
+	}
 	else
+	{
 		sceneFileName = "test.scn";
+		eye = vec4(0.0, 0.0, 1.5, 1.0);
+		at = vec4(0.0, 0.0, 0.0, 1.0 );
+		up = vec4( 0.0, 1.0, 0.0, 0.0 );
+
+	}
+
 
 	objectFileNames = readSceneFile(sceneFileName);
 
@@ -254,7 +334,13 @@ vector<string> readSceneFile(string fileName)
 		{
 			getline(fileStream, line);
 			split.reset(line, " ");
-			objectFileNames.push_back(split[0]);
+			string tmpFileName = split[0];
+			if (tmpFileName.back() == '\r')
+			{
+				tmpFileName.pop_back();
+			}
+
+			objectFileNames.push_back(tmpFileName);
 		}
 	}
 	else
@@ -268,8 +354,14 @@ vector<string> readSceneFile(string fileName)
 
 void loadObjectFromFile(string objFileName)
 {
+	static int offset = 0;
+	static int index = 0;
+
 	ifstream fileStream(objFileName);
 	string line;
+
+	GLfloat maxX = -MAXFLOAT;
+	GLfloat minX = MAXFLOAT;
 
 	fileStream.clear();
 	if (fileStream.is_open())
@@ -277,27 +369,74 @@ void loadObjectFromFile(string objFileName)
 		getline(fileStream, line);
 		Splitter split(line, " ");
 
+		vec4 minValues;
+		vec4 maxValues;
+
 		// ignore comment lines
 		while (split[0].c_str()[0] == '#')
 		{
+			if (split[0].compare("#\tRange") == 0)
+			{
+				string value = split[2];
+				value.pop_back();
+				value.erase(0, 1);
+				minValues.x = atof(value.c_str());
+
+				value = split[3];
+				value.pop_back();
+				minValues.y = atof(value.c_str());
+
+				value = split[4];
+				value.pop_back();
+				minValues.z = atof(value.c_str());
+
+				value = split[6];
+				value.pop_back();
+				value.erase(0, 1);
+				maxValues.x = atof(value.c_str());
+
+				value = split[7];
+				value.pop_back();
+				maxValues.y = atof(value.c_str());
+
+				value = split[8];
+				value.pop_back();
+				maxValues.z = atof(value.c_str());
+
+				minValues.w = maxValues.w = 1.0;
+			}
 			getline(fileStream, line);
 			split.reset(line, " ");
 		}
 
 		while (fileStream.good())
 		{
+			vertexStore.push_back(vector<point4>());
+
 			// get vertex info
 			while (split[0].compare("v") == 0)
 			{
-				vertexStore.push_back(point4(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str()), 1.0));
+				point4 vertex = point4(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str()), 1.0);
+				normalizeVector(&vertex, minValues, maxValues);
+				if (vertex.x < minX)
+					minX = vertex.x;
+				if (vertex.x > maxX)
+					maxX = vertex.x;
+
+				vertex.x -= index;
+				vertexStore[index].push_back(vertex);
 				getline(fileStream, line);
 				split.reset(line, " ");
 			}
 
+			normalStore.push_back(vector<vec4>());
 			// get normals
 			while (split[0].compare("vn") == 0)
 			{
-				normalStore.push_back(vec4(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str()), 1.0));
+				point4 normal = vec4(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str()), 1.0);
+				normalizeVector(&normal, minValues, maxValues);
+				 normal -= index;
+				normalStore[index].push_back(normal);
 				getline(fileStream, line);
 				split.reset(line, " ");
 			}
@@ -320,18 +459,28 @@ void loadObjectFromFile(string objFileName)
 				vertexIndices.z = atof(slashSplitter[0].c_str());
 				normalIndices.z = atof(slashSplitter[1].c_str());
 
-				addTri(vertexIndices.x, vertexIndices.y, vertexIndices.z, normalIndices.x, normalIndices.y, normalIndices.z);
+				addTri(vertexIndices.x, vertexIndices.y, vertexIndices.z, normalIndices.x, normalIndices.y, normalIndices.z, index);
 
 				getline(fileStream, line);
 				split.reset(line, " ");
 			}
 		}
+
+		index++;
+
 	}
 	else
 	{
-		cout << "\nCouldn't read file\n";
+		cout << "\nCouldn't read file " << objFileName << endl;
 		exit(1);
 	}
+}
 
+
+void normalizeVector(vec4 *vector, vec4 min, vec4 max)
+{
+	(*vector).x = ((*vector).x - min.x) / (max.x - min.x);
+	(*vector).y = ((*vector).y - min.y) / (max.y - min.y);
+	(*vector).z = ((*vector).z - min.z) / (max.z - min.z);
 }
 
