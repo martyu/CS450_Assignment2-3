@@ -64,8 +64,10 @@ GLuint  projection; // projection matrix uniform shader variable location
 
 vector<vector<point4>>	vertexStore;
 vector<vector<vec4>>	normalStore;
-vector<point4>	vertices;
-vector<vec4>	normals;
+
+// vectors of each objects vertices/normals
+vector<vector<point4>>	vertices;
+vector<vector<vec4>>	normals;
 
 vec4 eye;
 vec4 at;
@@ -83,13 +85,13 @@ void normalizeVector(vec4 *vector, vec4 min, vec4 max);
 
 void addTri( int pointA, int pointB, int pointC, int normalA, int normalB, int normalC, int index )
 {
-	vertices.push_back(vertexStore[index][pointA-1]);
-	vertices.push_back(vertexStore[index][pointB-1]);
-	vertices.push_back(vertexStore[index][pointC-1]);
+	vertices.back().push_back(vertexStore[index][pointA-1]);
+	vertices.back().push_back(vertexStore[index][pointB-1]);
+	vertices.back().push_back(vertexStore[index][pointC-1]);
 
-	normals.push_back(normalStore[index][normalA-1]);
-	normals.push_back(normalStore[index][normalB-1]);
-	normals.push_back(normalStore[index][normalC-1]);
+	normals.back().push_back(normalStore[index][normalA-1]);
+	normals.back().push_back(normalStore[index][normalB-1]);
+	normals.back().push_back(normalStore[index][normalC-1]);
 }
 
 //----------------------------------------------------------------------------
@@ -106,9 +108,9 @@ void init()
     GLuint buffer;
     glGenBuffers( 1, &buffer );
     glBindBuffer( GL_ARRAY_BUFFER, buffer );
-    glBufferData( GL_ARRAY_BUFFER, (vertices.size() + normals.size()) * sizeof(vec4), NULL, GL_STATIC_DRAW );
-    glBufferSubData( GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(point4), &vertices[0] );
-    glBufferSubData( GL_ARRAY_BUFFER, vertices.size() * sizeof(point4), normals.size() * sizeof(vec4), &normals[0] );
+    glBufferData( GL_ARRAY_BUFFER, (vertices[0].size() + normals[0].size()) * sizeof(vec4), NULL, GL_STATIC_DRAW );
+    glBufferSubData( GL_ARRAY_BUFFER, 0, vertices[0].size() * sizeof(point4), &vertices[0][0] );
+    glBufferSubData( GL_ARRAY_BUFFER, vertices[0].size() * sizeof(point4), normals[0].size() * sizeof(vec4), &normals[0][0] );
 
     // Load shaders and use the resulting shader program
     GLuint program = InitShader( "vshader.glsl", "fshader.glsl" );
@@ -121,7 +123,7 @@ void init()
 
     GLuint vNormal = glGetAttribLocation( program, "vNormal" );
     glEnableVertexAttribArray( vNormal );
-    glVertexAttribPointer( vNormal, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(vertices.size() * sizeof(point4)) );
+    glVertexAttribPointer( vNormal, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(vertices[0].size() * sizeof(point4)) );
 
 
     // Initialize shader lighting parameters
@@ -180,27 +182,55 @@ void display( void )
 
 	mat4 transform = LookAt(eye, at, up);
 
-	vec4 min = vec4(MAXFLOAT, MAXFLOAT, MAXFLOAT, MAXFLOAT);
-	vec4 max = vec4(-MAXFLOAT, -MAXFLOAT, -MAXFLOAT, -MAXFLOAT);
+//	vector<vector<vec4>> transformedVertices;
+//	for (int i = 0; i < vertexStore.size(); i++)
+//	{
+//		transformedVertices.push_back(vector<vec4>());
+//		for(int j = 0; j < vertexStore[i].size(); j++)
+//		{
+//			transformedVertices[i].push_back(transform * vertexStore[i][j]);
+//		}
+//	}
+//
+//	for (int i = 0; i < transformedVertices.size(); i++)
+//	{
+//		for (int j = 0; j < transformedVertices[i].size(); j++)
+//		{
+//			normalizeVector(&transformedVertices[i][j], vec4(0, 0, 0, 0), vec4(1.0, 1.0, 1.0, 1.0));
+//			printf("(%f, %f, %f, %f), ", transformedVertices[i][j].x, transformedVertices[i][j].y, transformedVertices[i][j].z, transformedVertices[i][j].w);
+//		}
+//	}
+//
+//	mat4 p = Perspective (90.0, 1.0, 0.1, 40.0);
+//    glUniformMatrix4fv( projection, 1, GL_TRUE, p );
+//	glBufferSubData( GL_ARRAY_BUFFER, 0, transformedVertices[0].size() * sizeof(point4), &transformedVertices[0][0] );
+//	glDrawArrays(GL_TRIANGLES, 0, (int)transformedVertices[0].size());
+//
+//	printf("size: %i\n", (int)transformedVertices[0].size());
 
-	vector<point4> transformedVertices;
-	for (int i = 0; i < vertices.size(); i++)
-	{
-		vec4 vertex = transform * vertices[i];
 
-		transformedVertices.push_back(vertex);
-	}
+//	vector<point4> transformedVertices;
+//	for (int i = 0; i < vertices.size(); i++)
+//	{
+//		vec4 vertex = transform * vertices[i];
+//
+//		transformedVertices.push_back(vertex);
+//	}
+//
+//	for (int i = 0; i < transformedVertices.size(); i++)
+//	{
+//		normalizeVector(&transformedVertices[i], vec4(0, 0, 0, 0), vec4(1.0, 1.0, 1.0, 1.0));
+//		vec4 vertex = transformedVertices[i];
+//	}
+//
+//	mat4 p = Perspective (90.0, 1.0, 0.1, 40.0);
+//    glUniformMatrix4fv( projection, 1, GL_TRUE, p );
+//	glBufferSubData( GL_ARRAY_BUFFER, 0, transformedVertices.size() * sizeof(point4), &transformedVertices[0] );
+//	glDrawArrays(GL_TRIANGLES, 0, (int)transformedVertices.size());
 
-	for (int i = 0; i < transformedVertices.size(); i++)
-	{
-		normalizeVector(&transformedVertices[i], vec4(0, 0, 0, 0), vec4(1.0, 1.0, 1.0, 1.0));
-		vec4 vertex = transformedVertices[i];
-	}
 
-	mat4 p = Perspective (90.0, 1.0, 0.1, 40.0);
-    glUniformMatrix4fv( projection, 1, GL_TRUE, p );
-	glBufferSubData( GL_ARRAY_BUFFER, 0, transformedVertices.size() * sizeof(point4), &transformedVertices[0] );
-	glDrawArrays(GL_TRIANGLES, 0, (int)transformedVertices.size());
+
+
 
     glutSwapBuffers();
 }
@@ -354,7 +384,7 @@ vector<string> readSceneFile(string fileName)
 
 void loadObjectFromFile(string objFileName)
 {
-	static int offset = 0;
+//	static int offset = 0;
 	static int index = 0;
 
 	ifstream fileStream(objFileName);
@@ -412,6 +442,7 @@ void loadObjectFromFile(string objFileName)
 		while (fileStream.good())
 		{
 			vertexStore.push_back(vector<point4>());
+			vertices.push_back(vector<point4>());
 
 			// get vertex info
 			while (split[0].compare("v") == 0)
@@ -430,6 +461,7 @@ void loadObjectFromFile(string objFileName)
 			}
 
 			normalStore.push_back(vector<vec4>());
+			normals.push_back(vector<vec4>());
 			// get normals
 			while (split[0].compare("vn") == 0)
 			{
