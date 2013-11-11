@@ -16,8 +16,8 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "76439049181CBBA00071A5A6"
                BuildableName = "CS450_Assignment2"
-               BlueprintName = "CS450_Assignment2"
-               ReferencedContainer = "container:CS450_Assignment2.xcodeproj">
+               BlueprintName = "CS450_Assignment2&amp;3"
+               ReferencedContainer = "container:CS450_Assignment2&amp;3.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -34,8 +34,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "76439049181CBBA00071A5A6"
             BuildableName = "CS450_Assignment2"
-            BlueprintName = "CS450_Assignment2"
-            ReferencedContainer = "container:CS450_Assignment2.xcodeproj">
+            BlueprintName = "CS450_Assignment2&amp;3"
+            ReferencedContainer = "container:CS450_Assignment2&amp;3.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -53,8 +53,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "76439049181CBBA00071A5A6"
             BuildableName = "CS450_Assignment2"
-            BlueprintName = "CS450_Assignment2"
-            ReferencedContainer = "container:CS450_Assignment2.xcodeproj">
+            BlueprintName = "CS450_Assignment2&amp;3"
+            ReferencedContainer = "container:CS450_Assignment2&amp;3.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -71,8 +71,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "76439049181CBBA00071A5A6"
             BuildableName = "CS450_Assignment2"
-            BlueprintName = "CS450_Assignment2"
-            ReferencedContainer = "container:CS450_Assignment2.xcodeproj">
+            BlueprintName = "CS450_Assignment2&amp;3"
+            ReferencedContainer = "container:CS450_Assignment2&amp;3.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
