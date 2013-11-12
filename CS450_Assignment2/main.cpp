@@ -69,6 +69,9 @@ vector<vector<vec4>>	normalStore;
 vector<vector<point4>>	vertices;
 vector<vector<vec4>>	normals;
 
+vector<GLuint> VBOs;
+vector<GLuint> VAOs;
+
 vec4 eye;
 vec4 at;
 vec4 up;
@@ -99,32 +102,39 @@ void addTri( int pointA, int pointB, int pointC, int normalA, int normalB, int n
 // OpenGL initialization
 void init()
 {
-    // Create a vertex array object
-    GLuint vao;
-    glGenVertexArrays( 1, &vao );
-    glBindVertexArray( vao );
-
-    // Create and initialize a buffer object
-    GLuint buffer;
-    glGenBuffers( 1, &buffer );
-    glBindBuffer( GL_ARRAY_BUFFER, buffer );
-    glBufferData( GL_ARRAY_BUFFER, (vertices[0].size() + normals[0].size()) * sizeof(vec4), NULL, GL_STATIC_DRAW );
-    glBufferSubData( GL_ARRAY_BUFFER, 0, vertices[0].size() * sizeof(point4), &vertices[0][0] );
-    glBufferSubData( GL_ARRAY_BUFFER, vertices[0].size() * sizeof(point4), normals[0].size() * sizeof(vec4), &normals[0][0] );
-
     // Load shaders and use the resulting shader program
     GLuint program = InitShader( "vshader.glsl", "fshader.glsl" );
     glUseProgram( program );
 
-    // set up vertex arrays
-    GLuint vPosition = glGetAttribLocation( program, "vPosition" );
-    glEnableVertexAttribArray( vPosition );
-    glVertexAttribPointer( vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0) );
+	for (int i = 0; i < vertices.size(); i++)
+	{
+		GLuint buffer1;
+		VBOs.push_back(buffer1);
 
-    GLuint vNormal = glGetAttribLocation( program, "vNormal" );
-    glEnableVertexAttribArray( vNormal );
-    glVertexAttribPointer( vNormal, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(vertices[0].size() * sizeof(point4)) );
+		GLuint buffer2;
+		VAOs.push_back(buffer2);
+	}
 
+	glGenVertexArrays( (int)VAOs.size(), &VAOs[0] );
+    glGenBuffers( (int)VBOs.size(), &VBOs[0] );
+
+	for (int i = 0; i < VBOs.size(); i++)
+	{
+		glBindVertexArray( VAOs[i] );
+		glBindBuffer( GL_ARRAY_BUFFER, VBOs[i] );
+		glBufferData( GL_ARRAY_BUFFER, (vertices[i].size() + normals[i].size()) * sizeof(vec4), NULL, GL_STATIC_DRAW );
+		glBufferSubData( GL_ARRAY_BUFFER, 0, vertices[i].size() * sizeof(point4), &vertices[i][0] );
+		glBufferSubData( GL_ARRAY_BUFFER, vertices[i].size() * sizeof(point4), normals[i].size() * sizeof(vec4), &normals[i][0] );
+
+		// set up vertex arrays
+		GLuint vPosition = glGetAttribLocation( program, "vPosition" );
+		glEnableVertexAttribArray( vPosition );
+		glVertexAttribPointer( vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0) );
+
+		GLuint vNormal = glGetAttribLocation( program, "vNormal" );
+		glEnableVertexAttribArray( vNormal );
+		glVertexAttribPointer( vNormal, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(vertices[i].size() * sizeof(point4)) );
+	}
 
     // Initialize shader lighting parameters
     // RAM: No need to change these...we'll learn about the details when we
@@ -154,14 +164,9 @@ void init()
     projection = glGetUniformLocation( program, "Projection" );
 
 
-//    mat4 p = Perspective(90.0, 1.0, 0.1, 4.0);
-//	eye = vec4(0.0, 0.0, 2.0, 1.0);
-//    at = vec4(0.0, 0.0, 0.0, 1.0 );
-//    up = vec4( 0.0, 1.0, 0.0, 0.0 );
-
 	mat4 mv = LookAt( eye, at, up );
-//	mat4 p = Ortho(-(int)vertexStore.size(), (int)vertexStore.size(), -(int)vertexStore.size(), (int)vertexStore.size(), 5, -5);
-	mat4 p = Perspective (90.0, 1.0, 0.1, 4.0);
+//	mat4 p = Ortho(-0.094552, 0.06105, 0.033349, 0.186195, -5, 5);
+	mat4 p = Perspective (90.0, 1.0, 0.1, 20.0);
 
     glUniformMatrix4fv( model_view, 1, GL_TRUE, mv );
     glUniformMatrix4fv( projection, 1, GL_TRUE, p );
@@ -181,56 +186,13 @@ void display( void )
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	mat4 transform = LookAt(eye, at, up);
+	glUniformMatrix4fv(model_view, 1, GL_TRUE, transform);
 
-//	vector<vector<vec4>> transformedVertices;
-//	for (int i = 0; i < vertexStore.size(); i++)
-//	{
-//		transformedVertices.push_back(vector<vec4>());
-//		for(int j = 0; j < vertexStore[i].size(); j++)
-//		{
-//			transformedVertices[i].push_back(transform * vertexStore[i][j]);
-//		}
-//	}
-//
-//	for (int i = 0; i < transformedVertices.size(); i++)
-//	{
-//		for (int j = 0; j < transformedVertices[i].size(); j++)
-//		{
-//			normalizeVector(&transformedVertices[i][j], vec4(0, 0, 0, 0), vec4(1.0, 1.0, 1.0, 1.0));
-//			printf("(%f, %f, %f, %f), ", transformedVertices[i][j].x, transformedVertices[i][j].y, transformedVertices[i][j].z, transformedVertices[i][j].w);
-//		}
-//	}
-//
-//	mat4 p = Perspective (90.0, 1.0, 0.1, 40.0);
-//    glUniformMatrix4fv( projection, 1, GL_TRUE, p );
-//	glBufferSubData( GL_ARRAY_BUFFER, 0, transformedVertices[0].size() * sizeof(point4), &transformedVertices[0][0] );
-//	glDrawArrays(GL_TRIANGLES, 0, (int)transformedVertices[0].size());
-//
-//	printf("size: %i\n", (int)transformedVertices[0].size());
-
-
-//	vector<point4> transformedVertices;
-//	for (int i = 0; i < vertices.size(); i++)
-//	{
-//		vec4 vertex = transform * vertices[i];
-//
-//		transformedVertices.push_back(vertex);
-//	}
-//
-//	for (int i = 0; i < transformedVertices.size(); i++)
-//	{
-//		normalizeVector(&transformedVertices[i], vec4(0, 0, 0, 0), vec4(1.0, 1.0, 1.0, 1.0));
-//		vec4 vertex = transformedVertices[i];
-//	}
-//
-//	mat4 p = Perspective (90.0, 1.0, 0.1, 40.0);
-//    glUniformMatrix4fv( projection, 1, GL_TRUE, p );
-//	glBufferSubData( GL_ARRAY_BUFFER, 0, transformedVertices.size() * sizeof(point4), &transformedVertices[0] );
-//	glDrawArrays(GL_TRIANGLES, 0, (int)transformedVertices.size());
-
-
-
-
+	for (int i = 0; i < VAOs.size(); i++)
+	{
+		glBindVertexArray(VAOs[i]);
+		glDrawArrays(GL_TRIANGLES, 0, (int)vertices[i].size());
+	}
 
     glutSwapBuffers();
 }
@@ -242,13 +204,13 @@ void keyboard( unsigned char key, int x, int y )
     switch( key ) {
 	case 'a':
 		{
-			eye.z -= .1;
+			eye.z -= .05;
 			glutPostRedisplay();
 			break;
 		}
 	case 's':
 		{
-			eye.z += .1;
+			eye.z += .05;
 			glutPostRedisplay();
 			break;
 		}
@@ -285,6 +247,24 @@ void keyboard( unsigned char key, int x, int y )
     }
 
 	printf("eye.z= %f\n", eye.z);
+}
+
+void mouse(int button, int state, int x, int y)
+{
+	if (button == GLUT_LEFT_BUTTON)
+	{
+		if (state == GLUT_DOWN)
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glPolygonOffset(1.0, 2 );
+		}
+		else if (state == GLUT_UP)
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+
+		glutPostRedisplay();
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -342,6 +322,7 @@ int main(int argc, char** argv)
     //NOTE:  callbacks must go after window is created!!!
     glutKeyboardFunc(keyboard);
     glutDisplayFunc(display);
+	glutMouseFunc(mouse);
     glutMainLoop();
 
     return(0);
@@ -511,8 +492,8 @@ void loadObjectFromFile(string objFileName)
 
 void normalizeVector(vec4 *vector, vec4 min, vec4 max)
 {
-	(*vector).x = ((*vector).x - min.x) / (max.x - min.x);
-	(*vector).y = ((*vector).y - min.y) / (max.y - min.y);
-	(*vector).z = ((*vector).z - min.z) / (max.z - min.z);
+//	(*vector).x = ((*vector).x - min.x) / (max.x - min.x);
+//	(*vector).y = ((*vector).y - min.y) / (max.y - min.y);
+//	(*vector).z = ((*vector).z - min.z) / (max.z - min.z);
 }
 
