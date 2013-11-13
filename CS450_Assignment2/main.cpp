@@ -77,6 +77,10 @@ vector<color4> colors;
 
 bool mouseDown;
 int objectSelected;
+// number of vertices used for axis lines
+int axisLineVerticesCount = 0;
+// number of vertices used for axis line end caps
+int endCapVerticesCount = 0;
 
 vec2 mouseLoc;
 
@@ -85,7 +89,7 @@ struct LookAtInfo
 	vec4 eye;
 	vec4 at;
 	vec4 up;
-	GLfloat rotate;
+	vec3 rotate;
 };
 
 GLuint program;
@@ -120,6 +124,71 @@ void addLine( vec4 pointA, vec4 pointB )
 
 	normals.back().push_back(pointA);
 	normals.back().push_back(pointB);
+
+	axisLineVerticesCount += 2;
+}
+
+// Vertices of a unit cube centered at origin, sides aligned with axes
+point4 cubeVertex(vec3 center, GLfloat sideLength, int vertexIndex)
+{
+	point4 cubeVertices[8] = {
+		point4( center.x-sideLength/2, center.y-sideLength/2, center.z+sideLength/2, 1.0 ),
+		point4( center.x-sideLength/2, center.y+sideLength/2, center.z+sideLength/2, 1.0 ),
+		point4( center.x+sideLength/2, center.y+sideLength/2, center.z+sideLength/2, 1.0 ),
+		point4( center.x+sideLength/2, center.y-sideLength/2, center.z+sideLength/2, 1.0 ),
+		point4( center.x-sideLength/2, center.y-sideLength/2, center.z-sideLength/2, 1.0 ),
+		point4( center.x-sideLength/2, center.y+sideLength/2, center.z-sideLength/2, 1.0 ),
+		point4( center.x+sideLength/2, center.y+sideLength/2, center.z-sideLength/2, 1.0 ),
+		point4( center.x+sideLength/2, center.y-sideLength/2, center.z-sideLength/2, 1.0 )
+	};
+
+	return cubeVertices[vertexIndex];
+}
+
+//----------------------------------------------------------------------------
+
+// quad generates two triangles for each face and assigns colors
+//    to the vertices.  Notice we keep the relative ordering when constructing the tris
+void addCube( vec3 center, GLfloat sideLength )
+{
+	vertices.back().push_back(cubeVertex(center, sideLength, 4));
+	vertices.back().push_back(cubeVertex(center, sideLength, 5));
+	vertices.back().push_back(cubeVertex(center, sideLength, 6));
+	vertices.back().push_back(cubeVertex(center, sideLength, 4));
+	vertices.back().push_back(cubeVertex(center, sideLength, 6));
+	vertices.back().push_back(cubeVertex(center, sideLength, 7));
+	vertices.back().push_back(cubeVertex(center, sideLength, 5));
+	vertices.back().push_back(cubeVertex(center, sideLength, 4));
+	vertices.back().push_back(cubeVertex(center, sideLength, 0));
+	vertices.back().push_back(cubeVertex(center, sideLength, 5));
+	vertices.back().push_back(cubeVertex(center, sideLength, 0));
+	vertices.back().push_back(cubeVertex(center, sideLength, 1));
+	vertices.back().push_back(cubeVertex(center, sideLength, 1));
+	vertices.back().push_back(cubeVertex(center, sideLength, 0));
+	vertices.back().push_back(cubeVertex(center, sideLength, 3));
+	vertices.back().push_back(cubeVertex(center, sideLength, 1));
+	vertices.back().push_back(cubeVertex(center, sideLength, 3));
+	vertices.back().push_back(cubeVertex(center, sideLength, 2));
+	vertices.back().push_back(cubeVertex(center, sideLength, 2));
+	vertices.back().push_back(cubeVertex(center, sideLength, 3));
+	vertices.back().push_back(cubeVertex(center, sideLength, 7));
+	vertices.back().push_back(cubeVertex(center, sideLength, 2));
+	vertices.back().push_back(cubeVertex(center, sideLength, 7));
+	vertices.back().push_back(cubeVertex(center, sideLength, 6));
+	vertices.back().push_back(cubeVertex(center, sideLength, 3));
+	vertices.back().push_back(cubeVertex(center, sideLength, 0));
+	vertices.back().push_back(cubeVertex(center, sideLength, 4));
+	vertices.back().push_back(cubeVertex(center, sideLength, 3));
+	vertices.back().push_back(cubeVertex(center, sideLength, 4));
+	vertices.back().push_back(cubeVertex(center, sideLength, 7));
+	vertices.back().push_back(cubeVertex(center, sideLength, 6));
+	vertices.back().push_back(cubeVertex(center, sideLength, 5));
+	vertices.back().push_back(cubeVertex(center, sideLength, 1));
+	vertices.back().push_back(cubeVertex(center, sideLength, 6));
+	vertices.back().push_back(cubeVertex(center, sideLength, 1));
+	vertices.back().push_back(cubeVertex(center, sideLength, 2));
+
+	endCapVerticesCount += 36;
 }
 
 //----------------------------------------------------------------------------
@@ -232,7 +301,9 @@ void display( void )
 	for (int i = 0; i < VAOs.size(); i++)
 	{
 		glBindVertexArray(VAOs[i]);
-		mat4 rotatedMatrix = LookAt(modelViewMatrices[i].eye, modelViewMatrices[i].at, modelViewMatrices[i].up) * RotateX(modelViewMatrices[i].rotate);
+		mat4 rotatedMatrix = LookAt(modelViewMatrices[i].eye, modelViewMatrices[i].at, modelViewMatrices[i].up) * RotateX(modelViewMatrices[i].rotate.x);
+		rotatedMatrix *= RotateY(modelViewMatrices[i].rotate.y);
+		rotatedMatrix *= RotateZ(modelViewMatrices[i].rotate.z);
 		glUniformMatrix4fv(model_view, 1, GL_TRUE, rotatedMatrix);
 		if (mouseDown)
 			glUniform4f(glGetUniformLocation(program, "colorID"), colors[i].x/255.0, colors[i].y/255.0, colors[i].z/255.0, 1.0f);
@@ -249,11 +320,16 @@ void display( void )
 			}
 			glUniform4f(glGetUniformLocation(program, "colorID"), -1.0f, 0.0f, 0.0f, 0.0f);
 		}
-		glDrawArrays(GL_TRIANGLES, 0, (int)vertices[i].size()-6);
+		glDrawArrays(GL_TRIANGLES, 0, (int)vertices[i].size()-axisLineVerticesCount-endCapVerticesCount);
 
 		// draw axis lines if object is selected
 		if (i == objectSelected)
-			glDrawArrays(GL_LINES, (int)vertices[i].size()-6, 6);
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			glDrawArrays(GL_TRIANGLES, (int)vertices[i].size()-axisLineVerticesCount-endCapVerticesCount, endCapVerticesCount);
+			glDrawArrays(GL_LINES, (int)vertices[i].size()-axisLineVerticesCount, axisLineVerticesCount);
+
+		}
 	}
 
 	glutSwapBuffers();
@@ -317,26 +393,54 @@ void keyboard( unsigned char key, int x, int y )
 		}
 	case 'e':
 		{
-//			modelViewMatrices[objectSelected].eye.y -= .1;
-//			modelViewMatrices[objectSelected].at.y -= .1;
-			modelViewMatrices[objectSelected].rotate -= 45;
+			modelViewMatrices[objectSelected].eye.y -= .1;
+			modelViewMatrices[objectSelected].at.y -= .1;
 			break;
 		}
 	case 'q':
 		{
-//			modelViewMatrices[objectSelected].eye.y += .1;
-//			modelViewMatrices[objectSelected].at.y += .1;
-			modelViewMatrices[objectSelected].rotate += 45;
+			modelViewMatrices[objectSelected].eye.y += .1;
+			modelViewMatrices[objectSelected].at.y += .1;
+			break;
+		}
+	case 'u':
+		{
+			modelViewMatrices[objectSelected].rotate.x -= 45;
+			break;
+		}
+	case 'i':
+		{
+			modelViewMatrices[objectSelected].rotate.x += 45;
+			break;
+		}
+	case 'j':
+		{
+			modelViewMatrices[objectSelected].rotate.y -= 45;
+			break;
+		}
+	case 'k':
+		{
+			modelViewMatrices[objectSelected].rotate.y += 45;
+			break;
+		}
+	case 'n':
+		{
+			modelViewMatrices[objectSelected].rotate.z -= 45;
+			break;
+		}
+	case 'm':
+		{
+			modelViewMatrices[objectSelected].rotate.z += 45;
 			break;
 		}
     }
 
 	glutPostRedisplay();
 
-	printf("eye= (%f, %f, %f)\nat= (%f, %f, %f)\nrotate= %f\n",
+	printf("eye= (%f, %f, %f)\nat= (%f, %f, %f)\nrotate= (%f, %f, %f)\n",
 		   modelViewMatrices[0].eye.x, modelViewMatrices[0].eye.y, modelViewMatrices[0].eye.z,
 		   modelViewMatrices[0].at.x, modelViewMatrices[0].at.y, modelViewMatrices[0].at.z,
-		   modelViewMatrices[0].rotate);
+		   modelViewMatrices[0].rotate.x, modelViewMatrices[0].rotate.y, modelViewMatrices[0].rotate.z);
 }
 
 void mouse(int button, int state, int x, int y)
@@ -378,11 +482,11 @@ int main(int argc, char** argv)
 
 //	objectFileNames = readSceneFile(sceneFileName);
 	objectFileNames.push_back("bunnyS.obj");
-	objectFileNames.push_back("cow.obj");
-	objectFileNames.push_back("frog.obj");
-	objectFileNames.push_back("sandal.obj");
-	objectFileNames.push_back("streetlamp.obj");
-	objectFileNames.push_back("teapotL.obj");
+//	objectFileNames.push_back("cow.obj");
+//	objectFileNames.push_back("frog.obj");
+//	objectFileNames.push_back("sandal.obj");
+//	objectFileNames.push_back("streetlamp.obj");
+//	objectFileNames.push_back("teapotL.obj");
 
 	for (int i = 0; i < objectFileNames.size(); i++)
 	{
@@ -562,6 +666,16 @@ void loadObjectFromFile(string objFileName)
 			}
 		}
 
+		// add axis line end cap cubes
+		addCube( vec3(-1.0, 0.0, 0.0), .1);
+		addCube( vec3(1.0, 0.0, 0.0), .1);
+		addCube( vec3(0.0, -1.0, 0.0), .1);
+		addCube( vec3(0.0, 1.0, 0.0), .1);
+		addCube( vec3(0.0, 0.0, -1.0), .1);
+		addCube( vec3(0.0, 0.0, 1.0), .1);
+
+
+		// add axis lines
 		addLine(vec4(-1.0, 0.0, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 1.0));
 		addLine(vec4(0.0, -1.0, 0.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0));
 		addLine(vec4(0.0, 0.0, -1.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0));
