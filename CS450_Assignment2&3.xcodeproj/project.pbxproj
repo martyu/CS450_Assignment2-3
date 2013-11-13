@@ -14,8 +14,8 @@
 		760E47E6181DD3D800129B05 /* fshader.glsl in CopyFiles */ = {isa = PBXBuildFile; fileRef = 76439059181CBBEC0071A5A6 /* fshader.glsl */; };
 		760E47E7181DD3D800129B05 /* vshader.glsl in CopyFiles */ = {isa = PBXBuildFile; fileRef = 7643905A181CBBEC0071A5A6 /* vshader.glsl */; };
 		760E47E8181DD3D800129B05 /* test.scn in CopyFiles */ = {isa = PBXBuildFile; fileRef = 7643905B181CBBEC0071A5A6 /* test.scn */; };
-		7643905C181CBBEC0071A5A6 /* initShader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 76439056181CBBEC0071A5A6 /* initShader.cpp */; };
-		7643905D181CBBEC0071A5A6 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 76439057181CBBEC0071A5A6 /* main.cpp */; };
+		7643905C181CBBEC0071A5A6 /* initShader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 76439056181CBBEC0071A5A6 /* initShader.cpp */; settings = {COMPILER_FLAGS = "-Wno-deprecated-declarations"; }; };
+		7643905D181CBBEC0071A5A6 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 76439057181CBBEC0071A5A6 /* main.cpp */; settings = {COMPILER_FLAGS = "-Wno-deprecated-declarations"; }; };
 		7643905E181CBBEC0071A5A6 /* makefile in Sources */ = {isa = PBXBuildFile; fileRef = 76439058181CBBEC0071A5A6 /* makefile */; };
 		76439074181CBE800071A5A6 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 76439072181CBE800071A5A6 /* GLUT.framework */; };
 		76439075181CBE800071A5A6 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 76439073181CBE800071A5A6 /* OpenGL.framework */; };
@@ -70,6 +70,12 @@
 		7643906C181CBBF70071A5A6 /* vec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vec.h; sourceTree = "<group>"; };
 		76439072181CBE800071A5A6 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
 		76439073181CBE800071A5A6 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		765B93BC18332D9200CF0F31 /* bunnyS.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = bunnyS.obj; sourceTree = "<group>"; };
+		765B93BD18332D9200CF0F31 /* cow.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = cow.obj; sourceTree = "<group>"; };
+		765B93BE18332D9200CF0F31 /* frog.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = frog.obj; sourceTree = "<group>"; };
+		765B93BF18332D9200CF0F31 /* sandal.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = sandal.obj; sourceTree = "<group>"; };
+		765B93C018332D9200CF0F31 /* streetlamp.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = streetlamp.obj; sourceTree = "<group>"; };
+		765B93C118332D9200CF0F31 /* teapotL.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = teapotL.obj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -125,6 +131,7 @@
 				76439059181CBBEC0071A5A6 /* fshader.glsl */,
 				7643905A181CBBEC0071A5A6 /* vshader.glsl */,
 				7643905B181CBBEC0071A5A6 /* test.scn */,
+				765B93BB18332D9200CF0F31 /* Assignment_3_Objects */,
 				762A2E41181DE13A00BA219C /* teapotFace.png */,
 				762A2E42181DE13E00BA219C /* BunnyNS.png */,
 				762A2E43181DE14200BA219C /* Sphere42NS.png */,
@@ -158,6 +165,19 @@
 				76439069181CBBF70071A5A6 /* glut.h */,
 			);
 			path = GL;
+			sourceTree = "<group>";
+		};
+		765B93BB18332D9200CF0F31 /* Assignment_3_Objects */ = {
+			isa = PBXGroup;
+			children = (
+				765B93BC18332D9200CF0F31 /* bunnyS.obj */,
+				765B93BD18332D9200CF0F31 /* cow.obj */,
+				765B93BE18332D9200CF0F31 /* frog.obj */,
+				765B93BF18332D9200CF0F31 /* sandal.obj */,
+				765B93C018332D9200CF0F31 /* streetlamp.obj */,
+				765B93C118332D9200CF0F31 /* teapotL.obj */,
+			);
+			path = Assignment_3_Objects;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

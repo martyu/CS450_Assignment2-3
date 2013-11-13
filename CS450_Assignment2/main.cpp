@@ -69,12 +69,22 @@ vector<vector<vec4>>	normalStore;
 vector<vector<point4>>	vertices;
 vector<vector<vec4>>	normals;
 
+vector<struct LookAtInfo> modelViewMatrices;
+
 vector<GLuint> VBOs;
 vector<GLuint> VAOs;
 
-vec4 eye;
-vec4 at;
-vec4 up;
+//vec4 eye;
+//vec4 at;
+//vec4 up;
+
+struct LookAtInfo
+{
+	vec4 eye;
+	vec4 at;
+	vec4 up;
+	GLfloat rotate;
+};
 
 #pragma mark Function declarations
 vector<string> readSceneFile(string fileName);
@@ -164,19 +174,43 @@ void init()
     projection = glGetUniformLocation( program, "Projection" );
 
 
-	mat4 mv = LookAt( eye, at, up );
+//	mat4 mv = LookAt( eye, at, up );
 //	mat4 p = Ortho(-0.094552, 0.06105, 0.033349, 0.186195, -5, 5);
-	mat4 p = Perspective (90.0, 1.0, 0.1, 20.0);
 
-    glUniformMatrix4fv( model_view, 1, GL_TRUE, mv );
+//	glUniformMatrix4fv( model_view, 1, GL_TRUE, LookAt(vec4(0.0, 0.0, 1.5, 1.0),
+//													   vec4(0.0, 0.0, 0.0, 1.0),
+//													   vec4(0.0, 1.0, 0.0, 0.0)) );
+
+	mat4 p = Perspective (90.0, 1.0, 0.1, 20.0);
     glUniformMatrix4fv( projection, 1, GL_TRUE, p );
 
+	struct LookAtInfo lookAtInfo;
+	lookAtInfo.eye = vec4(0.0, 0.0, 2.0, 1.0);
+	lookAtInfo.at = vec4(0.0, 0.0, 0.0, 1.0);
+	lookAtInfo.up = vec4(0.0, 1.0, 0.0, 0.0);
+
+	modelViewMatrices.push_back(lookAtInfo);
+
+	lookAtInfo.eye = vec4(0.7, 0.0, 2.0, 1.0);
+	lookAtInfo.at = vec4(0.0, 0.0, 0.0, 1.0);
+	lookAtInfo.up = vec4(0.0, 1.0, 0.0, 0.0);
+
+	modelViewMatrices.push_back(lookAtInfo);
+
+	lookAtInfo.eye = vec4(-1.4, 0.0, 2.8, 1.0);
+	lookAtInfo.at = vec4(0.0, 0.0, 0.0, 1.0);
+	lookAtInfo.up = vec4(0.0, 1.0, 0.0, 0.0);
+
+	modelViewMatrices.push_back(lookAtInfo);
+
+	lookAtInfo.eye = vec4(-3.6, 0.0, 3.6, 1.0);
+	lookAtInfo.at = vec4(0.0, 0.0, 0.0, 1.0);
+	lookAtInfo.up = vec4(0.0, -1.0, 0.0, 0.0);
+
+	modelViewMatrices.push_back(lookAtInfo);
 
     glEnable( GL_DEPTH_TEST );
     glClearColor( 1.0, 1.0, 1.0, 1.0 );
-
-//	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-//	glPolygonOffset(1.0, 2 ); //Try 1.0 and 2 for factor and units
 }
 
 //----------------------------------------------------------------------------
@@ -185,12 +219,11 @@ void display( void )
 {
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-	mat4 transform = LookAt(eye, at, up);
-	glUniformMatrix4fv(model_view, 1, GL_TRUE, transform);
-
 	for (int i = 0; i < VAOs.size(); i++)
 	{
 		glBindVertexArray(VAOs[i]);
+		mat4 rotatedMatrix = LookAt(modelViewMatrices[i].eye, modelViewMatrices[i].at, modelViewMatrices[i].up) * RotateY(modelViewMatrices[i].rotate);
+		glUniformMatrix4fv(model_view, 1, GL_TRUE, rotatedMatrix);
 		glDrawArrays(GL_TRIANGLES, 0, (int)vertices[i].size());
 	}
 
@@ -201,52 +234,50 @@ void display( void )
 
 void keyboard( unsigned char key, int x, int y )
 {
+
     switch( key ) {
 	case 'a':
 		{
-			eye.z -= .05;
-			glutPostRedisplay();
+			modelViewMatrices[0].eye.x -= .1;
+			modelViewMatrices[0].at.x -= .1;
+			break;
+		}
+	case 'w':
+		{
+			modelViewMatrices[0].eye.z -= .1;
+			modelViewMatrices[0].at.z -= .1;
+			break;
+		}
+	case 'd':
+		{
+			modelViewMatrices[0].eye.x += .1;
+			modelViewMatrices[0].at.x += .1;
 			break;
 		}
 	case 's':
 		{
-			eye.z += .05;
-			glutPostRedisplay();
+			modelViewMatrices[0].eye.z += .1;
+			modelViewMatrices[0].at.z += .1;
 			break;
 		}
-	case 'c':
+	case 'e':
 		{
-//			printf("eye.x:\n");
-//			scanf("%f", &eye.x);
-//			printf("eye.y:\n");
-//			scanf("%f", &eye.y);
-			printf("eye.z:\n");
-			scanf("%f", &eye.z);
-
-//			printf("at.x:\n");
-//			scanf("%f", &at.x);
-//			printf("at.y:\n");
-//			scanf("%f", &at.y);
-//			printf("at.z:\n");
-//			scanf("%f", &at.z);
-//
-//			printf("up.x:\n");
-//			scanf("%f", &up.x);
-//			printf("up.y:\n");
-//			scanf("%f", &up.y);
-//			printf("up.z:\n");
-//			scanf("%f", &up.z);
-
-			glutPostRedisplay();
-
+			modelViewMatrices[0].rotate += 45.0;
 			break;
 		}
-	case 'q': case 'Q':
-	    exit( EXIT_SUCCESS );
-	    break;
+	case 'q':
+		{
+			modelViewMatrices[0].rotate -= 45.0;
+			break;
+		}
     }
 
-	printf("eye.z= %f\n", eye.z);
+	glutPostRedisplay();
+
+	printf("eye= (%f, %f, %f)\nat= (%f, %f, %f)\nrotate= %f\n",
+		   modelViewMatrices[0].eye.x, modelViewMatrices[0].eye.y, modelViewMatrices[0].eye.z,
+		   modelViewMatrices[0].at.x, modelViewMatrices[0].at.y, modelViewMatrices[0].at.z,
+		   modelViewMatrices[0].rotate);
 }
 
 void mouse(int button, int state, int x, int y)
@@ -278,17 +309,10 @@ int main(int argc, char** argv)
 	if (argc > 10)
 	{
 		sceneFileName = argv[1];
-		eye = vec4(atof(argv[2]), atof(argv[3]), atof(argv[4]), 1.0);
-		at = vec4(atof(argv[5]), atof(argv[6]), atof(argv[7]), 1.0);
-		up = vec4(atof(argv[8]), atof(argv[9]), atof(argv[10]), 1.0);
 	}
 	else
 	{
 		sceneFileName = "test.scn";
-		eye = vec4(0.0, 0.0, 1.5, 1.0);
-		at = vec4(0.0, 0.0, 0.0, 1.0 );
-		up = vec4( 0.0, 1.0, 0.0, 0.0 );
-
 	}
 
 
@@ -448,7 +472,7 @@ void loadObjectFromFile(string objFileName)
 			{
 				point4 normal = vec4(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str()), 1.0);
 				normalizeVector(&normal, minValues, maxValues);
-				 normal -= index;
+				normal -= index;
 				normalStore[index].push_back(normal);
 				getline(fileStream, line);
 				split.reset(line, " ");
@@ -492,8 +516,8 @@ void loadObjectFromFile(string objFileName)
 
 void normalizeVector(vec4 *vector, vec4 min, vec4 max)
 {
-//	(*vector).x = ((*vector).x - min.x) / (max.x - min.x);
-//	(*vector).y = ((*vector).y - min.y) / (max.y - min.y);
-//	(*vector).z = ((*vector).z - min.z) / (max.z - min.z);
+	(*vector).x = ((*vector).x - min.x) / (max.x - min.x);
+	(*vector).y = ((*vector).y - min.y) / (max.y - min.y);
+	(*vector).z = ((*vector).z - min.z) / (max.z - min.z);
 }
 
