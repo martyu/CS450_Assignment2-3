@@ -3,7 +3,12 @@
 in  vec4 color;
 out vec4 fColor;
 
+uniform vec4 colorID;
+
 void main()
 {
-    fColor = color;
+	if (colorID.x > 0.0)
+		fColor = colorID;
+	else
+		fColor = color;
 }

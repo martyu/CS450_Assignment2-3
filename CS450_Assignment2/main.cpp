@@ -73,10 +73,12 @@ vector<struct LookAtInfo> modelViewMatrices;
 
 vector<GLuint> VBOs;
 vector<GLuint> VAOs;
+vector<color4> colors;
 
-//vec4 eye;
-//vec4 at;
-//vec4 up;
+bool mouseDown;
+int objectSelected;
+
+vec2 mouseLoc;
 
 struct LookAtInfo
 {
@@ -85,6 +87,10 @@ struct LookAtInfo
 	vec4 up;
 	GLfloat rotate;
 };
+
+GLuint program;
+
+#define NO_OBJECT_SELECTED -1
 
 #pragma mark Function declarations
 vector<string> readSceneFile(string fileName);
@@ -107,13 +113,22 @@ void addTri( int pointA, int pointB, int pointC, int normalA, int normalB, int n
 	normals.back().push_back(normalStore[index][normalC-1]);
 }
 
+void addLine( vec4 pointA, vec4 pointB )
+{
+	vertices.back().push_back(pointA);
+	vertices.back().push_back(pointB);
+
+	normals.back().push_back(pointA);
+	normals.back().push_back(pointB);
+}
+
 //----------------------------------------------------------------------------
 
 // OpenGL initialization
 void init()
 {
     // Load shaders and use the resulting shader program
-    GLuint program = InitShader( "vshader.glsl", "fshader.glsl" );
+    program = InitShader( "vshader.glsl", "fshader.glsl" );
     glUseProgram( program );
 
 	for (int i = 0; i < vertices.size(); i++)
@@ -150,7 +165,7 @@ void init()
     // RAM: No need to change these...we'll learn about the details when we
     // cover Illumination and Shading
     vec4 light_position( 1.5, 0.5, 2.0, 1.0 );
-    color4 light_ambient( 0.2, 0.2, 0.2, 1.0 );
+    color4 light_ambient( 0.2, 0.5, 0.2, 1.0 );
     color4 light_diffuse( 1.0, 1.0, 1.0, 1.0 );
     color4 light_specular( 1.0, 1.0, 1.0, 1.0 );
 
@@ -173,7 +188,6 @@ void init()
     model_view = glGetUniformLocation( program, "ModelView" );
     projection = glGetUniformLocation( program, "Projection" );
 
-
 //	mat4 mv = LookAt( eye, at, up );
 //	mat4 p = Ortho(-0.094552, 0.06105, 0.033349, 0.186195, -5, 5);
 
@@ -184,33 +198,29 @@ void init()
 	mat4 p = Perspective (90.0, 1.0, 0.1, 20.0);
     glUniformMatrix4fv( projection, 1, GL_TRUE, p );
 
-	struct LookAtInfo lookAtInfo;
-	lookAtInfo.eye = vec4(0.0, 0.0, 2.0, 1.0);
-	lookAtInfo.at = vec4(0.0, 0.0, 0.0, 1.0);
-	lookAtInfo.up = vec4(0.0, 1.0, 0.0, 0.0);
 
-	modelViewMatrices.push_back(lookAtInfo);
+	for (int i = 0; i < vertices.size(); i++)
+	{
+		struct LookAtInfo lookAtInfo;
+		lookAtInfo.eye = vec4(0.0, 0.0, 3.0, 1.0);
+		lookAtInfo.at = vec4(0.0, 0.0, 0.0, 1.0);
+		lookAtInfo.up = vec4(0.0, 1.0, 0.0, 0.0);
+		lookAtInfo.rotate = 0.0;
+		modelViewMatrices.push_back(lookAtInfo);
+	}
 
-	lookAtInfo.eye = vec4(0.7, 0.0, 2.0, 1.0);
-	lookAtInfo.at = vec4(0.0, 0.0, 0.0, 1.0);
-	lookAtInfo.up = vec4(0.0, 1.0, 0.0, 0.0);
-
-	modelViewMatrices.push_back(lookAtInfo);
-
-	lookAtInfo.eye = vec4(-1.4, 0.0, 2.8, 1.0);
-	lookAtInfo.at = vec4(0.0, 0.0, 0.0, 1.0);
-	lookAtInfo.up = vec4(0.0, 1.0, 0.0, 0.0);
-
-	modelViewMatrices.push_back(lookAtInfo);
-
-	lookAtInfo.eye = vec4(-3.6, 0.0, 3.6, 1.0);
-	lookAtInfo.at = vec4(0.0, 0.0, 0.0, 1.0);
-	lookAtInfo.up = vec4(0.0, -1.0, 0.0, 0.0);
-
-	modelViewMatrices.push_back(lookAtInfo);
+	for (int i = 0; i < modelViewMatrices.size(); i++)
+	{
+		float r = (arc4random() % 255);
+		float g = (arc4random() % 255);
+		float b = (arc4random() % 255);
+		colors.push_back(vec4(r, g, b, 1.0f));
+	}
 
     glEnable( GL_DEPTH_TEST );
     glClearColor( 1.0, 1.0, 1.0, 1.0 );
+
+	objectSelected = NO_OBJECT_SELECTED;
 }
 
 //----------------------------------------------------------------------------
@@ -222,12 +232,57 @@ void display( void )
 	for (int i = 0; i < VAOs.size(); i++)
 	{
 		glBindVertexArray(VAOs[i]);
-		mat4 rotatedMatrix = LookAt(modelViewMatrices[i].eye, modelViewMatrices[i].at, modelViewMatrices[i].up) * RotateY(modelViewMatrices[i].rotate);
+		mat4 rotatedMatrix = LookAt(modelViewMatrices[i].eye, modelViewMatrices[i].at, modelViewMatrices[i].up) * RotateX(modelViewMatrices[i].rotate);
 		glUniformMatrix4fv(model_view, 1, GL_TRUE, rotatedMatrix);
-		glDrawArrays(GL_TRIANGLES, 0, (int)vertices[i].size());
+		if (mouseDown)
+			glUniform4f(glGetUniformLocation(program, "colorID"), colors[i].x/255.0, colors[i].y/255.0, colors[i].z/255.0, 1.0f);
+		else
+		{
+			if (i == objectSelected)
+			{
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				glPolygonOffset(1.0, 2 );
+			}
+			else
+			{
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			}
+			glUniform4f(glGetUniformLocation(program, "colorID"), -1.0f, 0.0f, 0.0f, 0.0f);
+		}
+		glDrawArrays(GL_TRIANGLES, 0, (int)vertices[i].size()-6);
+
+		// draw axis lines if object is selected
+		if (i == objectSelected)
+			glDrawArrays(GL_LINES, (int)vertices[i].size()-6, 6);
 	}
 
-    glutSwapBuffers();
+	glutSwapBuffers();
+
+	if (mouseDown)
+	{
+		mouseDown = false;
+		glFlush();
+		glFinish();
+
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		unsigned char data[4];
+		glReadPixels(mouseLoc.x, mouseLoc.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+		for (int i = 0; i < colors.size(); i++)
+		{
+			printf("%i ", data[0]);
+
+			if (data[0] == 255 && data[1] == 255 && data[2] == 255)
+				objectSelected = NO_OBJECT_SELECTED;
+			if (colors[i].x == data[0] && colors[i].y == data[1] && colors[i].z == data[2])
+				objectSelected = i;
+
+			printf("\nobj selected: %i\n", objectSelected);
+		}
+
+		glutPostRedisplay();
+	}
+
 }
 
 //----------------------------------------------------------------------------
@@ -238,36 +293,40 @@ void keyboard( unsigned char key, int x, int y )
     switch( key ) {
 	case 'a':
 		{
-			modelViewMatrices[0].eye.x -= .1;
-			modelViewMatrices[0].at.x -= .1;
+			modelViewMatrices[objectSelected].eye.x += .1;
+			modelViewMatrices[objectSelected].at.x += .1;
 			break;
 		}
 	case 'w':
 		{
-			modelViewMatrices[0].eye.z -= .1;
-			modelViewMatrices[0].at.z -= .1;
+			modelViewMatrices[objectSelected].eye.z += .1;
+			modelViewMatrices[objectSelected].at.z += .1;
 			break;
 		}
 	case 'd':
 		{
-			modelViewMatrices[0].eye.x += .1;
-			modelViewMatrices[0].at.x += .1;
+			modelViewMatrices[objectSelected].eye.x -= .1;
+			modelViewMatrices[objectSelected].at.x -= .1;
 			break;
 		}
 	case 's':
 		{
-			modelViewMatrices[0].eye.z += .1;
-			modelViewMatrices[0].at.z += .1;
+			modelViewMatrices[objectSelected].eye.z -= .1;
+			modelViewMatrices[objectSelected].at.z -= .1;
 			break;
 		}
 	case 'e':
 		{
-			modelViewMatrices[0].rotate += 45.0;
+//			modelViewMatrices[objectSelected].eye.y -= .1;
+//			modelViewMatrices[objectSelected].at.y -= .1;
+			modelViewMatrices[objectSelected].rotate -= 45;
 			break;
 		}
 	case 'q':
 		{
-			modelViewMatrices[0].rotate -= 45.0;
+//			modelViewMatrices[objectSelected].eye.y += .1;
+//			modelViewMatrices[objectSelected].at.y += .1;
+			modelViewMatrices[objectSelected].rotate += 45;
 			break;
 		}
     }
@@ -286,12 +345,13 @@ void mouse(int button, int state, int x, int y)
 	{
 		if (state == GLUT_DOWN)
 		{
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			glPolygonOffset(1.0, 2 );
+			mouseLoc.x = x;
+			mouseLoc.y = y;
+			mouseDown = true;
 		}
 		else if (state == GLUT_UP)
 		{
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			mouseDown = false;
 		}
 
 		glutPostRedisplay();
@@ -316,7 +376,13 @@ int main(int argc, char** argv)
 	}
 
 
-	objectFileNames = readSceneFile(sceneFileName);
+//	objectFileNames = readSceneFile(sceneFileName);
+	objectFileNames.push_back("bunnyS.obj");
+	objectFileNames.push_back("cow.obj");
+	objectFileNames.push_back("frog.obj");
+	objectFileNames.push_back("sandal.obj");
+	objectFileNames.push_back("streetlamp.obj");
+	objectFileNames.push_back("teapotL.obj");
 
 	for (int i = 0; i < objectFileNames.size(); i++)
 	{
@@ -395,9 +461,6 @@ void loadObjectFromFile(string objFileName)
 	ifstream fileStream(objFileName);
 	string line;
 
-	GLfloat maxX = -MAXFLOAT;
-	GLfloat minX = MAXFLOAT;
-
 	fileStream.clear();
 	if (fileStream.is_open())
 	{
@@ -454,12 +517,8 @@ void loadObjectFromFile(string objFileName)
 			{
 				point4 vertex = point4(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str()), 1.0);
 				normalizeVector(&vertex, minValues, maxValues);
-				if (vertex.x < minX)
-					minX = vertex.x;
-				if (vertex.x > maxX)
-					maxX = vertex.x;
 
-				vertex.x -= index;
+//				vertex.x -= index;
 				vertexStore[index].push_back(vertex);
 				getline(fileStream, line);
 				split.reset(line, " ");
@@ -472,7 +531,7 @@ void loadObjectFromFile(string objFileName)
 			{
 				point4 normal = vec4(atof(split[1].c_str()), atof(split[2].c_str()), atof(split[3].c_str()), 1.0);
 				normalizeVector(&normal, minValues, maxValues);
-				normal -= index;
+//				normal.x -= index;
 				normalStore[index].push_back(normal);
 				getline(fileStream, line);
 				split.reset(line, " ");
@@ -503,6 +562,10 @@ void loadObjectFromFile(string objFileName)
 			}
 		}
 
+		addLine(vec4(-1.0, 0.0, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 1.0));
+		addLine(vec4(0.0, -1.0, 0.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0));
+		addLine(vec4(0.0, 0.0, -1.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0));
+
 		index++;
 
 	}
@@ -511,13 +574,14 @@ void loadObjectFromFile(string objFileName)
 		cout << "\nCouldn't read file " << objFileName << endl;
 		exit(1);
 	}
+
 }
 
 
 void normalizeVector(vec4 *vector, vec4 min, vec4 max)
 {
-	(*vector).x = ((*vector).x - min.x) / (max.x - min.x);
-	(*vector).y = ((*vector).y - min.y) / (max.y - min.y);
-	(*vector).z = ((*vector).z - min.z) / (max.z - min.z);
+//	(*vector).x = ((*vector).x - min.x) / (max.x - min.x);
+//	(*vector).y = ((*vector).y - min.y) / (max.y - min.y);
+//	(*vector).z = ((*vector).z - min.z) / (max.z - min.z);
 }
 

@@ -19,6 +19,12 @@
 		7643905E181CBBEC0071A5A6 /* makefile in Sources */ = {isa = PBXBuildFile; fileRef = 76439058181CBBEC0071A5A6 /* makefile */; };
 		76439074181CBE800071A5A6 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 76439072181CBE800071A5A6 /* GLUT.framework */; };
 		76439075181CBE800071A5A6 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 76439073181CBE800071A5A6 /* OpenGL.framework */; };
+		765B93C218332EFD00CF0F31 /* bunnyS.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 765B93BC18332D9200CF0F31 /* bunnyS.obj */; };
+		765B93C318332EFD00CF0F31 /* cow.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 765B93BD18332D9200CF0F31 /* cow.obj */; };
+		765B93C418332EFD00CF0F31 /* frog.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 765B93BE18332D9200CF0F31 /* frog.obj */; };
+		765B93C518332EFD00CF0F31 /* sandal.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 765B93BF18332D9200CF0F31 /* sandal.obj */; };
+		765B93C618332EFD00CF0F31 /* streetlamp.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 765B93C018332D9200CF0F31 /* streetlamp.obj */; };
+		765B93C718332EFD00CF0F31 /* teapotL.obj in CopyFiles */ = {isa = PBXBuildFile; fileRef = 765B93C118332D9200CF0F31 /* teapotL.obj */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +34,12 @@
 			dstPath = "";
 			dstSubfolderSpec = 16;
 			files = (
+				765B93C218332EFD00CF0F31 /* bunnyS.obj in CopyFiles */,
+				765B93C318332EFD00CF0F31 /* cow.obj in CopyFiles */,
+				765B93C418332EFD00CF0F31 /* frog.obj in CopyFiles */,
+				765B93C518332EFD00CF0F31 /* sandal.obj in CopyFiles */,
+				765B93C618332EFD00CF0F31 /* streetlamp.obj in CopyFiles */,
+				765B93C718332EFD00CF0F31 /* teapotL.obj in CopyFiles */,
 				760E47E2181DD3D800129B05 /* sphere42NS.obj in CopyFiles */,
 				760E47E3181DD3D800129B05 /* bunnyNS.obj in CopyFiles */,
 				760E47E4181DD3D800129B05 /* faceNS.obj in CopyFiles */,
