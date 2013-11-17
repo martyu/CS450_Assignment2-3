@@ -56,6 +56,11 @@ public:
 	}
 };
 
+
+#define NO_OBJECT_SELECTED -1
+#define NO_PREVIOUS_X -INT_MAX
+#define WINDOW_SIZE 512
+
 typedef Angel::vec4  color4;
 typedef Angel::vec4  point4;
 
@@ -81,8 +86,6 @@ int objectSelected;
 int axisLineVerticesCount = 0;
 // number of vertices used for axis line end caps
 int endCapVerticesCount = 216;
-
-vec4 mouseLoc;
 
 struct LookAtInfo
 {
@@ -114,12 +117,16 @@ enum mouseTrackDirection {
 	LeftRight
 };
 
+struct Coordinates {
+	int x;
+	int y;
+};
+
 TransformMode mode;
 Axis selectedAxis;
+struct Coordinates mouseLoc;
 
-static int previousMousePointX = -INT_MAX;
-
-#define NO_OBJECT_SELECTED -1
+static int previousMousePointX = NO_PREVIOUS_X;
 
 #pragma mark Function declarations
 vector<string> readSceneFile(string fileName);
@@ -328,6 +335,9 @@ void init()
 
 void display( void )
 {
+	printf("mouse at (%i, %i)\n", mouseLoc.x, mouseLoc.y);
+
+
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	mat4 transformedMatrix;
@@ -335,17 +345,20 @@ void display( void )
 	for (int i = 0; i < VAOs.size(); i++)
 	{
 		glBindVertexArray(VAOs[i]);
+
 		transformedMatrix = LookAt(modelViewMatrices[i].eye, modelViewMatrices[i].at, modelViewMatrices[i].up) * RotateX(modelViewMatrices[i].rotate.x)
-							*= RotateY(modelViewMatrices[i].rotate.y)
-							*= RotateZ(modelViewMatrices[i].rotate.z)
-							*= Translate(modelViewMatrices[i].translate.x, modelViewMatrices[i].translate.y, modelViewMatrices[i].translate.z)
-							*= Scale(modelViewMatrices[i].scale.x, modelViewMatrices[i].scale.y, modelViewMatrices[i].scale.z);
+		*= RotateY(modelViewMatrices[i].rotate.y)
+		*= RotateZ(modelViewMatrices[i].rotate.z)
+		*= Translate(modelViewMatrices[i].translate.x, modelViewMatrices[i].translate.y, modelViewMatrices[i].translate.z)
+		*= Scale(modelViewMatrices[i].scale.x, modelViewMatrices[i].scale.y, modelViewMatrices[i].scale.z);
 
 		glUniformMatrix4fv(model_view, 1, GL_TRUE, transformedMatrix);
 
 		if (mouseDown)
-			// get the colorID of the current object being checked.
+		{
+			// set the colorID for the current object being checked.
 			glUniform4f(glGetUniformLocation(program, "colorID"), colors[i].x/255.0, colors[i].y/255.0, colors[i].z/255.0, 1.0f);
+		}
 		else
 		{
 			if (i == objectSelected)
@@ -362,6 +375,7 @@ void display( void )
 			// set colorID of fshader to -1 to let it know mouse is not down.
 			glUniform4f(glGetUniformLocation(program, "colorID"), -1.0f, 0.0f, 0.0f, 0.0f);
 		}
+
 		// draw the object
 		glDrawArrays(GL_TRIANGLES, 0, (int)vertices[i].size()-axisLineVerticesCount-endCapVerticesCount);
 
@@ -395,12 +409,11 @@ void display( void )
 
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		unsigned char data[4];
+
 		glReadPixels(mouseLoc.x, mouseLoc.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
 		for (int i = 0; i < colors.size(); i++)
 		{
-			printf("%i ", data[0]);
-
 			if (data[0] == 255 && data[1] == 255 && data[2] == 255)
 				objectSelected = NO_OBJECT_SELECTED;
 			if (colors[i].x == data[0] && colors[i].y == data[1] && colors[i].z == data[2])
@@ -643,15 +656,13 @@ void mouse(int button, int state, int x, int y)
 		if (state == GLUT_DOWN)
 		{
 			mouseLoc.x = x;
-			mouseLoc.y = y;
-			mouseLoc.z = 0.0;
-			mouseLoc.w = 1.0;
+			mouseLoc.y = y + 2*(WINDOW_SIZE/2 - y);
 			mouseDown = true;
 		}
 		else if (state == GLUT_UP)
 		{
 			mouseDown = false;
-			previousMousePointX = -INT_MAX;
+			previousMousePointX = NO_PREVIOUS_X;
 		}
 
 		glutPostRedisplay();
@@ -661,9 +672,9 @@ void mouse(int button, int state, int x, int y)
 void mouseDidMove(int x, int y)
 {
 	mouseLoc.x = x;
-	mouseLoc.y = y;
+	mouseLoc.y = y + 2*(WINDOW_SIZE/2 - y);
 
-	if (previousMousePointX == -INT_MAX)
+	if (previousMousePointX == NO_PREVIOUS_X)
 		previousMousePointX = x;
 
 	int diffX = x - previousMousePointX;
@@ -746,8 +757,8 @@ int main(int argc, char** argv)
 
 //	objectFileNames = readSceneFile(sceneFileName);
 	objectFileNames.push_back("bunnyS.obj");
-//	objectFileNames.push_back("cow.obj");
-//	objectFileNames.push_back("frog.obj");
+	objectFileNames.push_back("cow.obj");
+	objectFileNames.push_back("frog.obj");
 //	objectFileNames.push_back("sandal.obj");
 //	objectFileNames.push_back("streetlamp.obj");
 //	objectFileNames.push_back("teapotL.obj");
@@ -765,7 +776,7 @@ int main(int argc, char** argv)
     glutInitContextVersion (3, 2);
     glutInitContextFlags (GLUT_FORWARD_COMPATIBLE);
 #endif
-    glutInitWindowSize(512, 512);
+    glutInitWindowSize(WINDOW_SIZE, WINDOW_SIZE);
     glutInitWindowPosition(500, 300);
     glutCreateWindow("Simple Open GL Program");
     printf("%s\n%s\n", glGetString(GL_RENDERER), glGetString(GL_VERSION));
@@ -932,18 +943,18 @@ void loadObjectFromFile(string objFileName)
 		}
 
 		// add axis line end cap cubes
-		addCube( vec3(-.5, 0.0, 0.0), .1);
-		addCube( vec3(.5, 0.0, 0.0), .1);
-		addCube( vec3(0.0, -.5, 0.0), .1);
-		addCube( vec3(0.0, .5, 0.0), .1);
-		addCube( vec3(0.0, 0.0, -.5), .1);
-		addCube( vec3(0.0, 0.0, .5), .1);
+		addCube( vec3(-1.0, 0.0, 0.0), .1);
+		addCube( vec3(1.0, 0.0, 0.0), .1);
+		addCube( vec3(0.0, -1.0, 0.0), .1);
+		addCube( vec3(0.0, 1.0, 0.0), .1);
+		addCube( vec3(0.0, 0.0, -1.0), .1);
+		addCube( vec3(0.0, 0.0, 1.0), .1);
 
 
 		// add axis lines
-		addLine(vec4(-5.0, 0.0, 0.0, 1.0), vec4(5.0, 0.0, 0.0, 1.0));
-		addLine(vec4(0.0, -5.0, 0.0, 1.0), vec4(0.0, 5.0, 0.0, 1.0));
-		addLine(vec4(0.0, 0.0, -5.0, 1.0), vec4(0.0, 0.0, 5.0, 1.0));
+		addLine(vec4(-1.0, 0.0, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 1.0));
+		addLine(vec4(0.0, -1.0, 0.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0));
+		addLine(vec4(0.0, 0.0, -1.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0));
 
 		index++;
 
