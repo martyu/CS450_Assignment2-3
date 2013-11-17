@@ -80,9 +80,9 @@ int objectSelected;
 // number of vertices used for axis lines
 int axisLineVerticesCount = 0;
 // number of vertices used for axis line end caps
-int endCapVerticesCount = 0;
+int endCapVerticesCount = 216;
 
-vec2 mouseLoc;
+vec4 mouseLoc;
 
 struct LookAtInfo
 {
@@ -90,9 +90,34 @@ struct LookAtInfo
 	vec4 at;
 	vec4 up;
 	vec3 rotate;
+	vec3 scale;
+	vec3 translate;
 };
 
 GLuint program;
+
+enum TransformMode {
+	ModeRotate = 0,
+	ModeTranslate,
+	ModeScale
+};
+
+enum Axis {
+	XAxis = 0,
+	YAxis,
+	ZAxis,
+	NoAxis
+};
+
+enum mouseTrackDirection {
+	UpDown = 0,
+	LeftRight
+};
+
+TransformMode mode;
+Axis selectedAxis;
+
+static int previousMousePointX = -INT_MAX;
 
 #define NO_OBJECT_SELECTED -1
 
@@ -187,8 +212,6 @@ void addCube( vec3 center, GLfloat sideLength )
 	vertices.back().push_back(cubeVertex(center, sideLength, 6));
 	vertices.back().push_back(cubeVertex(center, sideLength, 1));
 	vertices.back().push_back(cubeVertex(center, sideLength, 2));
-
-	endCapVerticesCount += 36;
 }
 
 //----------------------------------------------------------------------------
@@ -271,18 +294,27 @@ void init()
 	for (int i = 0; i < vertices.size(); i++)
 	{
 		struct LookAtInfo lookAtInfo;
-		lookAtInfo.eye = vec4(0.0, 0.0, 3.0, 1.0);
-		lookAtInfo.at = vec4(0.0, 0.0, 0.0, 1.0);
+		lookAtInfo.eye = vec4(0.0+i-2, 0.0, 3.0, 1.0);
+		lookAtInfo.at = vec4(0.0+i-2, 0.0, 0.0, 1.0);
 		lookAtInfo.up = vec4(0.0, 1.0, 0.0, 0.0);
 		lookAtInfo.rotate = 0.0;
+		lookAtInfo.translate = 0.0;
+		lookAtInfo.scale = 1.0;
 		modelViewMatrices.push_back(lookAtInfo);
 	}
 
 	for (int i = 0; i < modelViewMatrices.size(); i++)
 	{
-		float r = (arc4random() % 255);
-		float g = (arc4random() % 255);
-		float b = (arc4random() % 255);
+		float r;
+		float g;
+		float b;
+		do
+		{
+			r = (arc4random() % 255);
+			g = (arc4random() % 255);
+			b = (arc4random() % 255);
+		} while (r == 1 || g == 1 || b == 1);
+
 		colors.push_back(vec4(r, g, b, 1.0f));
 	}
 
@@ -298,37 +330,57 @@ void display( void )
 {
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+	mat4 transformedMatrix;
+
 	for (int i = 0; i < VAOs.size(); i++)
 	{
 		glBindVertexArray(VAOs[i]);
-		mat4 rotatedMatrix = LookAt(modelViewMatrices[i].eye, modelViewMatrices[i].at, modelViewMatrices[i].up) * RotateX(modelViewMatrices[i].rotate.x);
-		rotatedMatrix *= RotateY(modelViewMatrices[i].rotate.y);
-		rotatedMatrix *= RotateZ(modelViewMatrices[i].rotate.z);
-		glUniformMatrix4fv(model_view, 1, GL_TRUE, rotatedMatrix);
+		transformedMatrix = LookAt(modelViewMatrices[i].eye, modelViewMatrices[i].at, modelViewMatrices[i].up) * RotateX(modelViewMatrices[i].rotate.x)
+							*= RotateY(modelViewMatrices[i].rotate.y)
+							*= RotateZ(modelViewMatrices[i].rotate.z)
+							*= Translate(modelViewMatrices[i].translate.x, modelViewMatrices[i].translate.y, modelViewMatrices[i].translate.z)
+							*= Scale(modelViewMatrices[i].scale.x, modelViewMatrices[i].scale.y, modelViewMatrices[i].scale.z);
+
+		glUniformMatrix4fv(model_view, 1, GL_TRUE, transformedMatrix);
+
 		if (mouseDown)
+			// get the colorID of the current object being checked.
 			glUniform4f(glGetUniformLocation(program, "colorID"), colors[i].x/255.0, colors[i].y/255.0, colors[i].z/255.0, 1.0f);
 		else
 		{
 			if (i == objectSelected)
 			{
+				// if there's an object selected, draw it in wireframe mode.
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				glPolygonOffset(1.0, 2 );
 			}
 			else
 			{
+				// else draw it filled.
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			}
+			// set colorID of fshader to -1 to let it know mouse is not down.
 			glUniform4f(glGetUniformLocation(program, "colorID"), -1.0f, 0.0f, 0.0f, 0.0f);
 		}
+		// draw the object
 		glDrawArrays(GL_TRIANGLES, 0, (int)vertices[i].size()-axisLineVerticesCount-endCapVerticesCount);
 
-		// draw axis lines if object is selected
+		// draw axis lines/endcaps if object is selected
 		if (i == objectSelected)
 		{
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			glDrawArrays(GL_TRIANGLES, (int)vertices[i].size()-axisLineVerticesCount-endCapVerticesCount, endCapVerticesCount);
-			glDrawArrays(GL_LINES, (int)vertices[i].size()-axisLineVerticesCount, axisLineVerticesCount);
 
+			glUniform4f(glGetUniformLocation(program, "colorID"), 1.0, 0.0, 0.0, 1.0);
+			glDrawArrays(GL_TRIANGLES, (int)vertices[i].size() - axisLineVerticesCount - endCapVerticesCount, endCapVerticesCount/3);
+
+			glUniform4f(glGetUniformLocation(program, "colorID"), 0.0, 1.0, 0.0, 1.0);
+			glDrawArrays(GL_TRIANGLES, (int)vertices[i].size() - axisLineVerticesCount - endCapVerticesCount + endCapVerticesCount/3, endCapVerticesCount/3);
+
+			glUniform4f(glGetUniformLocation(program, "colorID"), 0.0, 0.0, 1.0, 1.0);
+			glDrawArrays(GL_TRIANGLES, (int)vertices[i].size() - axisLineVerticesCount - endCapVerticesCount + (2*endCapVerticesCount/3), endCapVerticesCount/3);
+
+			glUniform4f(glGetUniformLocation(program, "colorID"), 0.0, 0.0, 0.0, 1.0);
+			glDrawArrays(GL_LINES, (int)vertices[i].size()-axisLineVerticesCount, axisLineVerticesCount);
 		}
 	}
 
@@ -337,6 +389,7 @@ void display( void )
 	if (mouseDown)
 	{
 		mouseDown = false;
+
 		glFlush();
 		glFinish();
 
@@ -352,6 +405,16 @@ void display( void )
 				objectSelected = NO_OBJECT_SELECTED;
 			if (colors[i].x == data[0] && colors[i].y == data[1] && colors[i].z == data[2])
 				objectSelected = i;
+
+			if (data[0] == 255 && data[1] == 0 && data[2] == 0)
+				selectedAxis = XAxis;
+			else if (data[0] == 0 && data[1] == 255 && data[2] == 0)
+				selectedAxis = YAxis;
+			else if (data[0] == 0 && data[1] == 0 && data[2] == 255)
+				selectedAxis = ZAxis;
+			else
+				selectedAxis = NoAxis;
+
 
 			printf("\nobj selected: %i\n", objectSelected);
 		}
@@ -433,6 +496,136 @@ void keyboard( unsigned char key, int x, int y )
 			modelViewMatrices[objectSelected].rotate.z += 45;
 			break;
 		}
+	case '1':
+		{
+			mode = ModeRotate;
+			printf("mode: rotate\n");
+			break;
+		}
+	case '2':
+		{
+			mode = ModeScale;
+			printf("mode: scale\n");
+			break;
+		}
+	case '3':
+		{
+			mode = ModeTranslate;
+			printf("mode: translate\n");
+			break;
+		}
+	case '-':
+		{
+			switch (mode) {
+				case ModeRotate:
+					switch (selectedAxis) {
+						case XAxis:
+							modelViewMatrices[objectSelected].rotate.x -= 1;
+							break;
+						case YAxis:
+							modelViewMatrices[objectSelected].rotate.y -= 1;
+							break;
+						case ZAxis:
+							modelViewMatrices[objectSelected].rotate.z -= 1;
+							break;
+						default:
+							break;
+					}
+					glutPostRedisplay();
+					break;
+				case ModeTranslate:
+					switch (selectedAxis) {
+						case XAxis:
+							modelViewMatrices[objectSelected].translate.x -= .05;
+							break;
+						case YAxis:
+							modelViewMatrices[objectSelected].translate.y -= .05;
+							break;
+						case ZAxis:
+							modelViewMatrices[objectSelected].translate.z -= .05;
+							break;
+						default:
+							break;
+					}
+					glutPostRedisplay();
+					break;
+				case ModeScale:
+					switch (selectedAxis) {
+						case XAxis:
+							modelViewMatrices[objectSelected].scale.x -= .1;
+							break;
+						case YAxis:
+							modelViewMatrices[objectSelected].scale.y -= .1;
+							break;
+						case ZAxis:
+							modelViewMatrices[objectSelected].scale.z -= .1;
+							break;
+						default:
+							break;
+					}
+					glutPostRedisplay();
+					break;
+				default:
+					break;
+			}
+			break;
+		}
+	case '=':
+		{
+			switch (mode) {
+				case ModeRotate:
+					switch (selectedAxis) {
+						case XAxis:
+							modelViewMatrices[objectSelected].rotate.x += 1;
+							break;
+						case YAxis:
+							modelViewMatrices[objectSelected].rotate.y += 1;
+							break;
+						case ZAxis:
+							modelViewMatrices[objectSelected].rotate.z += 1;
+							break;
+						default:
+							break;
+					}
+					glutPostRedisplay();
+					break;
+				case ModeTranslate:
+					switch (selectedAxis) {
+						case XAxis:
+							modelViewMatrices[objectSelected].translate.x += .05;
+							break;
+						case YAxis:
+							modelViewMatrices[objectSelected].translate.y += .05;
+							break;
+						case ZAxis:
+							modelViewMatrices[objectSelected].translate.z += .05;
+							break;
+						default:
+							break;
+					}
+					glutPostRedisplay();
+					break;
+				case ModeScale:
+					switch (selectedAxis) {
+						case XAxis:
+							modelViewMatrices[objectSelected].scale.x += .1;
+							break;
+						case YAxis:
+							modelViewMatrices[objectSelected].scale.y += .1;
+							break;
+						case ZAxis:
+							modelViewMatrices[objectSelected].scale.z += .1;
+							break;
+						default:
+							break;
+					}
+					glutPostRedisplay();
+					break;
+				default:
+					break;
+			}
+			break;
+		}
     }
 
 	glutPostRedisplay();
@@ -451,15 +644,86 @@ void mouse(int button, int state, int x, int y)
 		{
 			mouseLoc.x = x;
 			mouseLoc.y = y;
+			mouseLoc.z = 0.0;
+			mouseLoc.w = 1.0;
 			mouseDown = true;
 		}
 		else if (state == GLUT_UP)
 		{
 			mouseDown = false;
+			previousMousePointX = -INT_MAX;
 		}
 
 		glutPostRedisplay();
 	}
+}
+
+void mouseDidMove(int x, int y)
+{
+	mouseLoc.x = x;
+	mouseLoc.y = y;
+
+	if (previousMousePointX == -INT_MAX)
+		previousMousePointX = x;
+
+	int diffX = x - previousMousePointX;
+
+	printf("x= %i, prevX = %i, diffX= %i\n", x, previousMousePointX, diffX);
+
+	switch (mode) {
+		case ModeRotate:
+			switch (selectedAxis) {
+				case XAxis:
+					modelViewMatrices[objectSelected].rotate.x += diffX;
+					break;
+				case YAxis:
+					modelViewMatrices[objectSelected].rotate.y += diffX;
+					break;
+				case ZAxis:
+					modelViewMatrices[objectSelected].rotate.z += diffX;
+					break;
+				default:
+					break;
+			}
+			glutPostRedisplay();
+			break;
+		case ModeTranslate:
+			switch (selectedAxis) {
+				case XAxis:
+					modelViewMatrices[objectSelected].translate.x += diffX * .005;
+					break;
+				case YAxis:
+					modelViewMatrices[objectSelected].translate.y += diffX * .005;
+					break;
+				case ZAxis:
+					modelViewMatrices[objectSelected].translate.z += diffX * .005;
+					break;
+				default:
+					break;
+			}
+			glutPostRedisplay();
+			break;
+		case ModeScale:
+			switch (selectedAxis) {
+				case XAxis:
+					modelViewMatrices[objectSelected].scale.x += diffX * .05;
+					break;
+				case YAxis:
+					modelViewMatrices[objectSelected].scale.y += diffX * .05;
+					break;
+				case ZAxis:
+					modelViewMatrices[objectSelected].scale.z += diffX * .05;
+					break;
+				default:
+					break;
+			}
+			glutPostRedisplay();
+			break;
+		default:
+			break;
+	}
+
+	previousMousePointX = x;
 }
 
 //----------------------------------------------------------------------------
@@ -517,6 +781,7 @@ int main(int argc, char** argv)
     glutKeyboardFunc(keyboard);
     glutDisplayFunc(display);
 	glutMouseFunc(mouse);
+	glutMotionFunc(mouseDidMove);
     glutMainLoop();
 
     return(0);
@@ -667,18 +932,18 @@ void loadObjectFromFile(string objFileName)
 		}
 
 		// add axis line end cap cubes
-		addCube( vec3(-1.0, 0.0, 0.0), .1);
-		addCube( vec3(1.0, 0.0, 0.0), .1);
-		addCube( vec3(0.0, -1.0, 0.0), .1);
-		addCube( vec3(0.0, 1.0, 0.0), .1);
-		addCube( vec3(0.0, 0.0, -1.0), .1);
-		addCube( vec3(0.0, 0.0, 1.0), .1);
+		addCube( vec3(-.5, 0.0, 0.0), .1);
+		addCube( vec3(.5, 0.0, 0.0), .1);
+		addCube( vec3(0.0, -.5, 0.0), .1);
+		addCube( vec3(0.0, .5, 0.0), .1);
+		addCube( vec3(0.0, 0.0, -.5), .1);
+		addCube( vec3(0.0, 0.0, .5), .1);
 
 
 		// add axis lines
-		addLine(vec4(-1.0, 0.0, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 1.0));
-		addLine(vec4(0.0, -1.0, 0.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0));
-		addLine(vec4(0.0, 0.0, -1.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0));
+		addLine(vec4(-5.0, 0.0, 0.0, 1.0), vec4(5.0, 0.0, 0.0, 1.0));
+		addLine(vec4(0.0, -5.0, 0.0, 1.0), vec4(0.0, 5.0, 0.0, 1.0));
+		addLine(vec4(0.0, 0.0, -5.0, 1.0), vec4(0.0, 0.0, 5.0, 1.0));
 
 		index++;
 

@@ -35,7 +35,7 @@ void main()
     vec4  specular = sr * SpecularProduct;
 
     if( dot(L, N) < 0.0 ) {
-	specular = vec4(0.0, 0.0, 0.0, 1.0);
+		specular = vec4(0.0, 0.0, 0.0, 1.0);
     }
 
     gl_Position = Projection * ModelView * vPosition;

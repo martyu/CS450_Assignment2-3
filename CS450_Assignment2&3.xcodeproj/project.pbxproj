@@ -63,7 +63,7 @@
 		7643904A181CBBA00071A5A6 /* CS450_Assignment2&3 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "CS450_Assignment2&3"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7643904F181CBBA00071A5A6 /* CS450_Assignment2.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = CS450_Assignment2.1; sourceTree = "<group>"; };
 		76439056181CBBEC0071A5A6 /* initShader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = initShader.cpp; sourceTree = "<group>"; };
-		76439057181CBBEC0071A5A6 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		76439057181CBBEC0071A5A6 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = main.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		76439058181CBBEC0071A5A6 /* makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = makefile; sourceTree = "<group>"; };
 		76439059181CBBEC0071A5A6 /* fshader.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fshader.glsl; sourceTree = "<group>"; };
 		7643905A181CBBEC0071A5A6 /* vshader.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = vshader.glsl; sourceTree = "<group>"; };
